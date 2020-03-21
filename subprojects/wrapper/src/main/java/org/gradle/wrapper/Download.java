@@ -68,10 +68,20 @@ public class Download implements IDownload {
                 // [1] https://docs.oracle.com/javase/8/docs/api/java/net/doc-files/net-properties.html#Proxies
                 // [2] https://hc.apache.org/httpcomponents-client-5.0.x/httpclient5/xref/org/apache/hc/client5/http/impl/auth/SystemDefaultCredentialsProvider.html#L117
 
-                if ("http".equals(getRequestingScheme())) {
+                String protocol = getRequestingScheme();
+
+                if ("http".equals(protocol)) {
                     String proxyUser = System.getProperty("http.proxyUser");
                     if (proxyUser != null) {
                         String proxyPassword = System.getProperty("http.proxyPassword", "");
+                        return new PasswordAuthentication(proxyUser, proxyPassword.toCharArray());
+                    }
+                }
+
+                if ("https".equals(protocol)) {
+                    String proxyUser = System.getProperty("https.proxyUser");
+                    if (proxyUser != null) {
+                        String proxyPassword = System.getProperty("https.proxyPassword", "");
                         return new PasswordAuthentication(proxyUser, proxyPassword.toCharArray());
                     }
                 }
