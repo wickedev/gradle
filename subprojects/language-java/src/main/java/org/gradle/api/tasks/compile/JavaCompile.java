@@ -17,14 +17,17 @@
 package org.gradle.api.tasks.compile;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.gradle.api.Incubating;
 import org.gradle.api.JavaVersion;
+import org.gradle.api.JvmToolchainResolver;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.internal.file.FileOperations;
 import org.gradle.api.internal.file.FileTreeInternal;
+import org.gradle.api.internal.tasks.JavaHomeBasedJavaToolChain;
 import org.gradle.api.internal.tasks.JavaToolChainFactory;
 import org.gradle.api.internal.tasks.compile.CleaningJavaCompiler;
 import org.gradle.api.internal.tasks.compile.CompileJavaBuildOperationReportingCompiler;
@@ -38,6 +41,7 @@ import org.gradle.api.internal.tasks.compile.incremental.recomp.JavaRecompilatio
 import org.gradle.api.jvm.ModularitySpec;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.model.ReplacedBy;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.InputFiles;
@@ -57,6 +61,7 @@ import org.gradle.jvm.internal.toolchain.JavaToolChainInternal;
 import org.gradle.jvm.platform.JavaPlatform;
 import org.gradle.jvm.platform.internal.DefaultJavaPlatform;
 import org.gradle.jvm.toolchain.JavaToolChain;
+import org.gradle.jvm.toolchain.JvmToolchainRequirements;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.language.base.internal.compile.CompilerUtil;
 import org.gradle.work.Incremental;
@@ -84,7 +89,8 @@ import java.util.concurrent.Callable;
 @CacheableTask
 public class JavaCompile extends AbstractCompile {
     private final CompileOptions compileOptions;
-    private JavaToolChain toolChain;
+    private final JvmToolchainResolver toolchainResolver;
+    private Property<JvmToolchainRequirements> toolChainProperty;
     private final FileCollection stableSources = getProject().files((Callable<Object[]>) () -> new Object[]{getSource(), getSources()});
     private final ModularitySpec modularity;
 
@@ -103,6 +109,8 @@ public class JavaCompile extends AbstractCompile {
         }));
 
         this.modularity = objects.newInstance(DefaultModularitySpec.class);
+        toolChainProperty = objects.property(JvmToolchainRequirements.class);
+        toolchainResolver = objects.newInstance(JvmToolchainResolver.class);
     }
 
     /**
@@ -134,10 +142,7 @@ public class JavaCompile extends AbstractCompile {
      */
     @Nested
     public JavaToolChain getToolChain() {
-        if (toolChain != null) {
-            return toolChain;
-        }
-        return getJavaToolChainFactory().forCompileOptions(getOptions());
+        return toolchainResolver.resolve(toolChainProperty.get()).get();
     }
 
     /**
@@ -146,7 +151,7 @@ public class JavaCompile extends AbstractCompile {
      * @param toolChain The tool chain.
      */
     public void setToolChain(JavaToolChain toolChain) {
-        this.toolChain = toolChain;
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -234,6 +239,7 @@ public class JavaCompile extends AbstractCompile {
     }
 
     private void performCompilation(JavaCompileSpec spec, Compiler<JavaCompileSpec> compiler) {
+        System.out.println(spec.getClass());
         WorkResult result = new CompileJavaBuildOperationReportingCompiler(this, compiler, getServices().get(BuildOperationExecutor.class)).execute(spec);
         setDidWork(result.getDidWork());
     }
@@ -242,6 +248,17 @@ public class JavaCompile extends AbstractCompile {
         List<File> sourcesRoots = CompilationSourceDirs.inferSourceRoots((FileTreeInternal) getStableSources().getAsFileTree());
         JavaModuleDetector javaModuleDetector = getJavaModuleDetector();
         boolean isModule = JavaModuleDetector.isModuleSource(modularity.getInferModulePath().get(), sourcesRoots);
+
+        // TODO: move configuration to toolchain
+        final JavaToolChainInternal toolChain = (JavaToolChainInternal) getToolChain();
+        final JavaVersion toolchainVersion = toolChain.getJavaVersion();
+        compileOptions.getCompilerArgs().addAll(Lists.newArrayList("--release", toolchainVersion.getMajorVersion()));
+        System.out.println(toolChain);
+        if (toolChain instanceof JavaHomeBasedJavaToolChain) {
+            compileOptions.setFork(true);
+            System.out.println(((JavaHomeBasedJavaToolChain) toolChain).getJavaHome());
+            compileOptions.getForkOptions().setJavaHome(((JavaHomeBasedJavaToolChain) toolChain).getJavaHome());
+        }
 
         final DefaultJavaCompileSpec spec = new DefaultJavaCompileSpecFactory(compileOptions).create();
         spec.setDestinationDir(getDestinationDirectory().getAsFile().get());
@@ -256,9 +273,10 @@ public class JavaCompile extends AbstractCompile {
         spec.setTargetCompatibility(getTargetCompatibility());
         spec.setSourceCompatibility(getSourceCompatibility());
 
+
         spec.setCompileOptions(compileOptions);
         spec.setSourcesRoots(sourcesRoots);
-        if (((JavaToolChainInternal) getToolChain()).getJavaVersion().compareTo(JavaVersion.VERSION_1_8) < 0) {
+        if (toolchainVersion.compareTo(JavaVersion.VERSION_1_8) < 0) {
             spec.getCompileOptions().setHeaderOutputDirectory(null);
         }
         return spec;
@@ -303,5 +321,10 @@ public class JavaCompile extends AbstractCompile {
     @InputFiles
     protected FileCollection getStableSources() {
         return stableSources;
+    }
+
+    @Nested
+    public Property<JvmToolchainRequirements> getToolchainProperty() {
+        return toolChainProperty;
     }
 }

@@ -18,6 +18,7 @@ package org.gradle.api.internal.tasks;
 
 import org.gradle.api.JavaVersion;
 import org.gradle.api.internal.tasks.compile.JavaCompilerFactory;
+import org.gradle.api.tasks.Internal;
 import org.gradle.internal.jvm.Jvm;
 import org.gradle.internal.jvm.inspection.JvmVersionDetector;
 import org.gradle.process.internal.ExecActionFactory;
@@ -34,14 +35,21 @@ import java.io.File;
  */
 public class JavaHomeBasedJavaToolChain extends AbstractJavaToolChain {
     private final JavaVersion javaVersion;
+    private final File javaHome;
 
     public JavaHomeBasedJavaToolChain(File javaHome, JavaCompilerFactory compilerFactory, ExecActionFactory execActionFactory, JvmVersionDetector jvmVersionDetector) {
         super(compilerFactory, execActionFactory);
         this.javaVersion = jvmVersionDetector.getJavaVersion(Jvm.forHome(javaHome));
+        this.javaHome = javaHome;
     }
 
     @Override
     public JavaVersion getJavaVersion() {
         return javaVersion;
+    }
+
+    @Internal
+    public File getJavaHome() {
+        return javaHome;
     }
 }

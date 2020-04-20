@@ -33,6 +33,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.internal.component.external.model.ProjectDerivedCapability;
 import org.gradle.internal.jvm.DefaultModularitySpec;
+import org.gradle.jvm.toolchain.JvmToolchainRequirements;
 
 import java.util.regex.Pattern;
 
@@ -53,6 +54,7 @@ public class DefaultJavaPluginExtension implements JavaPluginExtension {
     private final TaskContainer tasks;
     private final Project project;
     private final ModularitySpec modularity;
+    private final JvmToolchainRequirements toolchain;
 
     public DefaultJavaPluginExtension(JavaPluginConvention convention,
                                       Project project) {
@@ -63,6 +65,7 @@ public class DefaultJavaPluginExtension implements JavaPluginExtension {
         this.tasks = project.getTasks();
         this.project = project;
         this.modularity = project.getObjects().newInstance(DefaultModularitySpec.class);
+        this.toolchain = project.getObjects().newInstance(JvmToolchainRequirements.class);
     }
 
     @Override
@@ -89,14 +92,19 @@ public class DefaultJavaPluginExtension implements JavaPluginExtension {
     public void registerFeature(String name, Action<? super FeatureSpec> configureAction) {
         Capability defaultCapability = new ProjectDerivedCapability(project, name);
         DefaultJavaFeatureSpec spec = new DefaultJavaFeatureSpec(
-                validateFeatureName(name),
-                defaultCapability, convention, this,
-                configurations,
-                objectFactory,
-                components,
-                tasks);
+            validateFeatureName(name),
+            defaultCapability, convention, this,
+            configurations,
+            objectFactory,
+            components,
+            tasks);
         configureAction.execute(spec);
         spec.create();
+    }
+
+    @Override
+    public void toolchain(Action<? super JvmToolchainRequirements> configureAction) {
+        configureAction.execute(toolchain);
     }
 
     @Override
@@ -123,6 +131,11 @@ public class DefaultJavaPluginExtension implements JavaPluginExtension {
     @Override
     public ModularitySpec getModularity() {
         return modularity;
+    }
+
+    @Override
+    public JvmToolchainRequirements getToolchainProperty() {
+        return toolchain;
     }
 
     private static String validateFeatureName(String name) {

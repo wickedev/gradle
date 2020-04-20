@@ -211,6 +211,7 @@ public class JavaBasePlugin implements Plugin<ProjectInternal> {
                 compileTask.getOptions().getHeaderOutputDirectory().convention(target.getLayout().getBuildDirectory().dir(generatedHeadersDir));
                 JavaPluginExtension javaPluginExtension = target.getExtensions().getByType(JavaPluginExtension.class);
                 compileTask.getModularity().getInferModulePath().convention(javaPluginExtension.getModularity().getInferModulePath());
+                compileTask.getToolchainProperty().convention(javaPluginExtension.getToolchainProperty());
             }
         });
     }

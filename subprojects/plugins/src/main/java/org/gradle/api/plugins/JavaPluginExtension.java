@@ -21,6 +21,7 @@ import org.gradle.api.Incubating;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.jvm.ModularitySpec;
+import org.gradle.jvm.toolchain.JvmToolchainRequirements;
 
 /**
  * Common configuration for Java based projects. This is added by the {@link JavaBasePlugin}.
@@ -118,4 +119,9 @@ public interface JavaPluginExtension {
      */
     @Incubating
     ModularitySpec getModularity();
+
+    @Incubating
+    void toolchain(Action<? super JvmToolchainRequirements> configureAction);
+
+    JvmToolchainRequirements getToolchainProperty();
 }
