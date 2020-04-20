@@ -1103,11 +1103,6 @@ public class Test extends AbstractTestTask implements JavaForkOptions, PatternFi
         action.execute(getFilter());
     }
 
-    /**
-     * Sets the testExecuter property.
-     *
-     * @since 4.2
-     */
     void setTestExecuter(TestExecuter<JvmTestExecutionSpec> testExecuter) {
         this.testExecuter = testExecuter;
     }
