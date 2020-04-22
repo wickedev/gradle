@@ -17,12 +17,14 @@
 package org.gradle.api.tasks.compile;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.gradle.api.Incubating;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.file.ProjectLayout;
+import org.gradle.api.internal.file.FileFactory;
 import org.gradle.api.internal.file.FileOperations;
 import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.internal.tasks.JavaToolChainFactory;
@@ -56,6 +58,8 @@ import org.gradle.internal.operations.BuildOperationExecutor;
 import org.gradle.jvm.internal.toolchain.JavaToolChainInternal;
 import org.gradle.jvm.platform.JavaPlatform;
 import org.gradle.jvm.platform.internal.DefaultJavaPlatform;
+import org.gradle.jvm.toolchain.JavaInstallation;
+import org.gradle.jvm.toolchain.JavaInstallationRegistry;
 import org.gradle.jvm.toolchain.JavaToolChain;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.language.base.internal.compile.CompilerUtil;
@@ -214,12 +218,22 @@ public class JavaCompile extends AbstractCompile {
     }
 
     @Inject
+    protected JavaInstallationRegistry getJavaInstallationRegistry() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Inject
     protected Deleter getDeleter() {
         throw new UnsupportedOperationException("Decorator takes care of injection");
     }
 
     @Inject
     protected ProjectLayout getProjectLayout() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Inject
+    protected FileFactory getFileFactory() {
         throw new UnsupportedOperationException();
     }
 
@@ -243,6 +257,18 @@ public class JavaCompile extends AbstractCompile {
         JavaModuleDetector javaModuleDetector = getJavaModuleDetector();
         boolean isModule = JavaModuleDetector.isModuleSource(modularity.getInferModulePath().get(), sourcesRoots);
 
+        final JavaInstallation javaInstallation;
+        if (getInstallation() == null) {
+            javaInstallation = getJavaInstallationRegistry().getInstallationForCurrentVirtualMachine().get();
+        } else {
+            javaInstallation = getJavaInstallationRegistry().installationForDirectory(getFileFactory().dir(new File(getInstallation().getPath().get()))).get();
+            System.out.println("forking ");
+            compileOptions.setFork(true);
+            System.out.println("using " + javaInstallation.getInstallationDirectory().getAsFile());
+            compileOptions.getCompilerArgs().addAll(Lists.newArrayList("--release", javaInstallation.getJavaVersion().getMajorVersion()));
+            compileOptions.getForkOptions().setJavaHome(javaInstallation.getInstallationDirectory().getAsFile());
+        }
+
         final DefaultJavaCompileSpec spec = new DefaultJavaCompileSpecFactory(compileOptions).create();
         spec.setDestinationDir(getDestinationDirectory().getAsFile().get());
         spec.setWorkingDir(getProjectLayout().getProjectDirectory().getAsFile());
@@ -258,7 +284,7 @@ public class JavaCompile extends AbstractCompile {
 
         spec.setCompileOptions(compileOptions);
         spec.setSourcesRoots(sourcesRoots);
-        if (((JavaToolChainInternal) getToolChain()).getJavaVersion().compareTo(JavaVersion.VERSION_1_8) < 0) {
+        if (javaInstallation.getJavaVersion().compareTo(JavaVersion.VERSION_1_8) < 0) {
             spec.getCompileOptions().setHeaderOutputDirectory(null);
         }
         return spec;

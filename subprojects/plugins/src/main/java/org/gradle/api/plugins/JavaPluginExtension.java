@@ -118,4 +118,6 @@ public interface JavaPluginExtension {
      */
     @Incubating
     ModularitySpec getModularity();
+
+    JavaInstallationsContainer getJavaInstallations();
 }

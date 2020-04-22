@@ -27,6 +27,7 @@ import org.gradle.api.component.SoftwareComponentContainer;
 import org.gradle.api.jvm.ModularitySpec;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.FeatureSpec;
+import org.gradle.api.plugins.JavaInstallationsContainer;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
@@ -53,6 +54,7 @@ public class DefaultJavaPluginExtension implements JavaPluginExtension {
     private final TaskContainer tasks;
     private final Project project;
     private final ModularitySpec modularity;
+    private final DefaultJavaInstallationsContainer installations;
 
     public DefaultJavaPluginExtension(JavaPluginConvention convention,
                                       Project project) {
@@ -63,6 +65,7 @@ public class DefaultJavaPluginExtension implements JavaPluginExtension {
         this.tasks = project.getTasks();
         this.project = project;
         this.modularity = project.getObjects().newInstance(DefaultModularitySpec.class);
+        this.installations = project.getObjects().newInstance(DefaultJavaInstallationsContainer.class);
     }
 
     @Override
@@ -123,6 +126,11 @@ public class DefaultJavaPluginExtension implements JavaPluginExtension {
     @Override
     public ModularitySpec getModularity() {
         return modularity;
+    }
+
+    @Override
+    public JavaInstallationsContainer getJavaInstallations() {
+        return installations;
     }
 
     private static String validateFeatureName(String name) {

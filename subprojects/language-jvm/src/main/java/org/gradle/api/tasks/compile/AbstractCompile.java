@@ -24,8 +24,11 @@ import org.gradle.api.model.ReplacedBy;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.SourceTask;
+import org.gradle.jvm.toolchain.JavaInstallationSpec;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -39,6 +42,7 @@ public abstract class AbstractCompile extends SourceTask {
     private FileCollection classpath;
     private String sourceCompatibility;
     private String targetCompatibility;
+    private JavaInstallationSpec installation;
 
     public AbstractCompile() {
         this.destinationDirectory = getProject().getObjects().directoryProperty();
@@ -141,6 +145,16 @@ public abstract class AbstractCompile extends SourceTask {
      */
     public void setTargetCompatibility(String targetCompatibility) {
         this.targetCompatibility = targetCompatibility;
+    }
+
+    @Optional
+    @Nested
+    public JavaInstallationSpec getInstallation() {
+        return installation;
+    }
+
+    public void setInstallation(JavaInstallationSpec installation) {
+        this.installation = installation;
     }
 
     /**
