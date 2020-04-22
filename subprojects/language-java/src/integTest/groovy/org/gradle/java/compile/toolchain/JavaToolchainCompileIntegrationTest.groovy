@@ -19,6 +19,7 @@ package org.gradle.java.compile.toolchain
 import org.gradle.integtests.fixtures.AbstractIntegrationSpec
 import org.gradle.util.Requires
 import org.gradle.util.TestPrecondition
+import spock.lang.Ignore
 
 @Requires(TestPrecondition.JDK11_OR_EARLIER)
 public class JavaToolchainCompileIntegrationTest extends AbstractIntegrationSpec {
@@ -42,6 +43,8 @@ public class JavaToolchainCompileIntegrationTest extends AbstractIntegrationSpec
 
                 def javaHome = "/Users/bmuskalla/.sdkman/candidates/java/13.0.2.hs-adpt"
             """
+
+        // TODO: as gradle property
         propertiesFile << """
                 systemProp.org.gradle.jvm.toolchains=/Users/bmuskalla/.sdkman/candidates/java/13.0.2.hs-adpt
             """.trim()
@@ -169,5 +172,50 @@ public class JavaToolchainCompileIntegrationTest extends AbstractIntegrationSpec
         expect:
         succeeds ':check'
     }
+
+    @Ignore
+    def "SPIKE: run multiple test tasks using different JDKs"() {
+        given:
+        // JAVA14FOO = /home/foo/jvm14
+
+        buildFile << """
+            java {
+                toolchain {
+                    requireMinVersion = JavaVersion.VERSION_14
+                }
+            }
+            //
+
+
+            task runTestswith14(type: Test) {
+                toolchain.set(foo14)
+                shouldRunAfter test
+            }
+            task runTestswith15(type: Test) {
+                // toolchain.set(toolchains.get("foo15"))
+
+                shouldRunAfter test
+            }
+        """
+
+        def file = file('src/test/java/toolchain/RequiresOtherJdkTest.java')
+        file.text = """
+            package toolchain;
+
+            import org.junit.jupiter.api.Test;
+
+            public class RequiresOtherJdkTest {
+                @Test
+                public void ok() {
+                    System.out.println("foooo".indent(3));
+                }
+            }
+        """
+
+        expect:
+        succeeds ':check'
+    }
+
+    // TODO: what about multi projects?
 
 }
