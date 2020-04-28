@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.Authenticator;
+import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
 import java.net.SocketTimeoutException;
 import java.net.URI;
@@ -55,10 +56,82 @@ public class Download implements IDownload {
         configureProxyAuthentication();
     }
 
-    private void configureProxyAuthentication() {
-        if (System.getProperty("http.proxyUser") != null) {
-            Authenticator.setDefault(new ProxyAuthenticator());
+    private void populateProxyPropertiesFromEnvironmentVariable(String protocol) {
+        // Do not fallback to environment variables if a proxy has been set via properties.
+        if (System.getProperty(protocol + ".proxyHost") != null) {
+            return;
         }
+
+        String variableName = protocol + "_proxy";
+        String proxyString = System.getenv(variableName);
+        if (proxyString == null) {
+            proxyString = System.getenv(variableName.toUpperCase());
+        }
+
+        try {
+            URL proxyUrl = new URL(proxyString);
+            System.setProperty(protocol + ".proxyHost", proxyUrl.getHost());
+
+            int port = proxyUrl.getPort();
+            if (port > 0) {
+                System.setProperty(protocol + ".proxyPort", String.valueOf(port));
+            }
+
+            String userInfo = proxyUrl.getUserInfo();
+            if (userInfo != null) {
+                String[] userAndPassword = userInfo.split(":", 2);
+                System.setProperty(protocol + ".proxyUser", userAndPassword[0]);
+                if (userAndPassword.length > 1) {
+                    System.setProperty(protocol + ".proxyPassword", userAndPassword[1]);
+                }
+            }
+        } catch (MalformedURLException e) {
+            // Simply ignore a malformed proxy URL.
+            if (proxyString != null) {
+                logger.log("Unable to parse value '" + proxyString + "' of environment variable '" + variableName + "' as a URL.");
+                if (!proxyString.startsWith("http")) {
+                    logger.log("Please ensure it contains a valid protocol prefix.");
+                }
+            }
+        }
+    }
+
+    private void configureProxyAuthentication() {
+        populateProxyPropertiesFromEnvironmentVariable("http");
+        populateProxyPropertiesFromEnvironmentVariable("https");
+        Authenticator.setDefault(getProxyPasswordAuthenticator());
+    }
+
+    private Authenticator getProxyPasswordAuthenticator() {
+        return new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                // While Java itself only defines the use of the "http(s).proxyHost" and "http(s).proxyPort" properties, see [1] for Java 8, the Apache HttpClient established the use of the
+                // "http(s).proxyUser" and "http(s).proxyPassword" properties, see [2], so support them here.
+                // [1] https://docs.oracle.com/javase/8/docs/api/java/net/doc-files/net-properties.html#Proxies
+                // [2] https://hc.apache.org/httpcomponents-client-5.0.x/httpclient5/xref/org/apache/hc/client5/http/impl/auth/SystemDefaultCredentialsProvider.html#L117
+
+                String protocol = getRequestingScheme();
+
+                if ("http".equals(protocol)) {
+                    String proxyUser = System.getProperty("http.proxyUser");
+                    if (proxyUser != null) {
+                        String proxyPassword = System.getProperty("http.proxyPassword", "");
+                        return new PasswordAuthentication(proxyUser, proxyPassword.toCharArray());
+                    }
+                }
+
+                if ("https".equals(protocol)) {
+                    String proxyUser = System.getProperty("https.proxyUser");
+                    if (proxyUser != null) {
+                        String proxyPassword = System.getProperty("https.proxyPassword", "");
+                        return new PasswordAuthentication(proxyUser, proxyPassword.toCharArray());
+                    }
+                }
+
+                return super.getPasswordAuthentication();
+            }
+        };
     }
 
     public void download(URI address, File destination) throws Exception {
@@ -74,7 +147,11 @@ public class Download implements IDownload {
         URL safeUrl = safeUri(address).toURL();
         try {
             out = new BufferedOutputStream(new FileOutputStream(destination));
+
+            // Note that no proxy is passed here as we configure any proxy globally using the HTTP(S) proxy system properties. The implementation will choose to look at the properties belonging to
+            // the protocol of the URL.
             conn = safeUrl.openConnection();
+
             addBasicAuthentication(address, conn);
             final String userAgentValue = calculateUserAgent();
             conn.setRequestProperty("User-Agent", userAgentValue);
@@ -185,15 +262,6 @@ public class Download implements IDownload {
         String osVersion = System.getProperty("os.version");
         String osArch = System.getProperty("os.arch");
         return String.format("%s/%s (%s;%s;%s) (%s;%s;%s)", appName, appVersion, osName, osVersion, osArch, javaVendor, javaVersion, javaVendorVersion);
-    }
-
-    private static class ProxyAuthenticator extends Authenticator {
-        @Override
-        protected PasswordAuthentication getPasswordAuthentication() {
-            return new PasswordAuthentication(
-                System.getProperty("http.proxyUser"), System.getProperty(
-                "http.proxyPassword", "").toCharArray());
-        }
     }
 
     private static class DefaultDownloadProgressListener implements DownloadProgressListener {
