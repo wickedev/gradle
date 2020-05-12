@@ -54,7 +54,7 @@ class DefaultGradlePropertiesControllerTest extends Specification {
         def properties = subject.gradleProperties
         def loadedProperties = Mock(GradleProperties)
         1 * propertiesLoader.loadGradleProperties(settingsDir) >> loadedProperties
-        1 * loadedProperties.mergeProperties(_) >> [property: '42']
+        2 * loadedProperties.mergeProperties(_) >> [property: '42']
         1 * loadedProperties.find(_) >> '42'
 
         when:
@@ -80,6 +80,7 @@ class DefaultGradlePropertiesControllerTest extends Specification {
 
         then:
         1 * propertiesLoader.loadGradleProperties(currentDir()) >> loadedProperties
+        1 * loadedProperties.mergeProperties(_) >> [:]
     }
 
     def "loadGradlePropertiesFrom fails when called with different argument"() {
@@ -90,6 +91,7 @@ class DefaultGradlePropertiesControllerTest extends Specification {
         def subject = new DefaultGradlePropertiesController(propertiesLoader)
         def loadedProperties = Mock(GradleProperties)
         1 * propertiesLoader.loadGradleProperties(settingsDir) >> loadedProperties
+        1 * loadedProperties.mergeProperties(_) >> [:]
 
         when:
         subject.loadGradlePropertiesFrom(settingsDir)

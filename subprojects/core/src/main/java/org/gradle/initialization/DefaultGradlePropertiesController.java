@@ -16,20 +16,24 @@
 
 package org.gradle.initialization;
 
+import org.gradle.api.Project;
 import org.gradle.api.internal.properties.GradleProperties;
 
 import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Map;
 
+import static java.util.Collections.emptyMap;
+
+
 public class DefaultGradlePropertiesController implements GradlePropertiesController {
 
-    private State state = new NotLoaded();
     private final GradleProperties sharedGradleProperties = new SharedGradleProperties();
-    private final IGradlePropertiesLoader propertiesLoader;
+
+    private State state;
 
     public DefaultGradlePropertiesController(IGradlePropertiesLoader propertiesLoader) {
-        this.propertiesLoader = propertiesLoader;
+        this.state = new NotLoaded(propertiesLoader);
     }
 
     @Override
@@ -67,7 +71,13 @@ public class DefaultGradlePropertiesController implements GradlePropertiesContro
         State loadGradlePropertiesFrom(File settingsDir);
     }
 
-    private class NotLoaded implements State {
+    private static class NotLoaded implements State {
+
+        private final IGradlePropertiesLoader propertiesLoader;
+
+        private NotLoaded(IGradlePropertiesLoader propertiesLoader) {
+            this.propertiesLoader = propertiesLoader;
+        }
 
         @Override
         public GradleProperties gradleProperties() {
@@ -76,10 +86,18 @@ public class DefaultGradlePropertiesController implements GradlePropertiesContro
 
         @Override
         public State loadGradlePropertiesFrom(File settingsDir) {
-            return new Loaded(
-                propertiesLoader.loadGradleProperties(settingsDir),
-                settingsDir
-            );
+            GradleProperties loadedProperties = propertiesLoader.loadGradleProperties(settingsDir);
+            setSystemPropertiesFromGradleProperties(loadedProperties.mergeProperties(emptyMap()));
+            return new Loaded(loadedProperties, settingsDir);
+        }
+
+        private void setSystemPropertiesFromGradleProperties(Map<String, String> properties) {
+            String prefix = Project.SYSTEM_PROP_PREFIX + '.';
+            for (String name : properties.keySet()) {
+                if (name.startsWith(prefix)) {
+                    System.setProperty(name.substring(prefix.length()), properties.get(name));
+                }
+            }
         }
     }
 
