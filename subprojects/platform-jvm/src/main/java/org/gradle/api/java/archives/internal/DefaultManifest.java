@@ -145,7 +145,9 @@ public class DefaultManifest implements ManifestInternal {
         for (Map.Entry<String, Object> entry : gradleManifest.getAttributes().entrySet()) {
             String mainAttributeName = entry.getKey();
             String mainAttributeValue = resolveValueToString(entry.getValue());
-            javaManifest.getMainAttributes().putValue(mainAttributeName, mainAttributeValue);
+            if (mainAttributeValue != null) {
+                javaManifest.getMainAttributes().putValue(mainAttributeName, mainAttributeValue);
+            }
         }
     }
 
