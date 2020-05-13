@@ -258,7 +258,7 @@ samples {
         }
     }
 
-    snippets.each { String id, File location ->
+/*    snippets.each { String id, File location ->
         publishedSamples.create(id) {
             File readme = new File(location, "README.adoc")
             if (readme.exists()) {
@@ -277,10 +277,10 @@ samples {
                 commonContent.from(common)
             }
         }
-    }
+    }*/
 
     publishedSamples {
-        kotlinApplication {
+        /*kotlinApplication {
             sampleDirectory = samplesRoot.dir("kotlin/application")
             description = "Build a Kotlin application."
             category = "Kotlin"
@@ -402,7 +402,7 @@ samples {
                 from(sampleDirectory.dir("common"))
             }
             // TODO (donat) sanity checks probably don't do anything for samples located one level down in the gradle/kotlin directories
-        }
+        }*/
 
         compositeBuildsBasics {
             sampleDirectory = file("src/samples/build-organization/compositeBuilds/basic")
