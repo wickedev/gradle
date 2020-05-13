@@ -44,7 +44,7 @@ class InetAddresses {
         if (interfaces != null) {
             while (interfaces.hasMoreElements()) {
                 analyzeNetworkInterface(interfaces.nextElement());
-            }   
+            }
         }
     }
 
@@ -59,8 +59,12 @@ class InetAddresses {
                 InetAddress candidate = candidates.nextElement();
                 if (isLoopbackInterface) {
                     if (candidate.isLoopbackAddress()) {
-                        logger.debug("Adding loopback address {}", candidate);
-                        loopback.add(candidate);
+                        if (candidate.isReachable(50)) {
+                            logger.debug("Adding loopback address {}", candidate);
+                            loopback.add(candidate);
+                        } else {
+                            logger.debug("Ignoring unreachable local address on loopback interface {}", candidate);
+                        }
                     } else {
                         logger.debug("Ignoring remote address on loopback interface {}", candidate);
                     }
