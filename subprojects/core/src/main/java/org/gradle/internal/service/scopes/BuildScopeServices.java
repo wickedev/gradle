@@ -279,9 +279,10 @@ public class BuildScopeServices extends DefaultServiceRegistry {
     }
 
     protected GradlePropertiesController createGradlePropertiesController(
+        BuildLayout buildLayout,
         IGradlePropertiesLoader propertiesLoader
     ) {
-        return new DefaultGradlePropertiesController(propertiesLoader);
+        return new DefaultGradlePropertiesController(buildLayout, propertiesLoader);
     }
 
     protected IGradlePropertiesLoader createGradlePropertiesLoader() {

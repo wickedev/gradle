@@ -16,20 +16,24 @@
 
 package org.gradle.initialization;
 
+import org.gradle.api.Project;
 import org.gradle.api.internal.properties.GradleProperties;
+import org.gradle.initialization.layout.BuildLayout;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.util.Collections;
 import java.util.Map;
 
 public class DefaultGradlePropertiesController implements GradlePropertiesController {
 
-    private State state = new NotLoaded();
+    private State state;
     private final GradleProperties sharedGradleProperties = new SharedGradleProperties();
     private final IGradlePropertiesLoader propertiesLoader;
 
-    public DefaultGradlePropertiesController(IGradlePropertiesLoader propertiesLoader) {
+    public DefaultGradlePropertiesController(BuildLayout buildLayout, IGradlePropertiesLoader propertiesLoader) {
         this.propertiesLoader = propertiesLoader;
+        this.state = new NotLoaded(propertiesLoader.loadGradlePropertiesFiles(buildLayout.getSettingsDir()));
     }
 
     @Override
@@ -69,15 +73,28 @@ public class DefaultGradlePropertiesController implements GradlePropertiesContro
 
     private class NotLoaded implements State {
 
+        private final GradleProperties loadedGradlePropertiesFiles;
+
+        public NotLoaded(GradleProperties loadedGradlePropertiesFiles) {
+            this.loadedGradlePropertiesFiles = loadedGradlePropertiesFiles;
+        }
+
         @Override
         public GradleProperties gradleProperties() {
-            throw new IllegalStateException("GradleProperties has not been loaded yet.");
+            return loadedGradlePropertiesFiles;
         }
 
         @Override
         public State loadGradlePropertiesFrom(File settingsDir) {
+            for (Map.Entry<String, String> entry : loadedGradlePropertiesFiles.mergeProperties(Collections.emptyMap()).entrySet()) {
+                String key = entry.getKey();
+                if (key.startsWith(Project.SYSTEM_PROP_PREFIX + '.')) {
+                    System.setProperty(key.substring((Project.SYSTEM_PROP_PREFIX + '.').length()), entry.getValue());
+                }
+
+            }
             return new Loaded(
-                propertiesLoader.loadGradleProperties(settingsDir),
+                loadedGradlePropertiesFiles,
                 settingsDir
             );
         }
