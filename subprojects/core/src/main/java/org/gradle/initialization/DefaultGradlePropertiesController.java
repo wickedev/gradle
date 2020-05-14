@@ -22,18 +22,18 @@ import org.gradle.initialization.layout.BuildLayout;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.util.Collections;
 import java.util.Map;
+
+import static java.util.Collections.emptyMap;
+
 
 public class DefaultGradlePropertiesController implements GradlePropertiesController {
 
-    private State state;
     private final GradleProperties sharedGradleProperties = new SharedGradleProperties();
-    private final IGradlePropertiesLoader propertiesLoader;
+    private State state;
 
     public DefaultGradlePropertiesController(BuildLayout buildLayout, IGradlePropertiesLoader propertiesLoader) {
-        this.propertiesLoader = propertiesLoader;
-        this.state = new NotLoaded(propertiesLoader.loadGradlePropertiesFiles(buildLayout.getSettingsDir()));
+        this.state = new Loaded(propertiesLoader.loadGradlePropertiesFiles(buildLayout.getSettingsDir()));
     }
 
     @Override
@@ -71,41 +71,42 @@ public class DefaultGradlePropertiesController implements GradlePropertiesContro
         State loadGradlePropertiesFrom(File settingsDir);
     }
 
-    private class NotLoaded implements State {
+    private static class Loaded implements State {
 
-        private final GradleProperties loadedGradlePropertiesFiles;
+        private final GradleProperties gradleProperties;
 
-        public NotLoaded(GradleProperties loadedGradlePropertiesFiles) {
-            this.loadedGradlePropertiesFiles = loadedGradlePropertiesFiles;
+        public Loaded(GradleProperties gradleProperties) {
+            this.gradleProperties = gradleProperties;
         }
 
         @Override
         public GradleProperties gradleProperties() {
-            return loadedGradlePropertiesFiles;
+            return gradleProperties;
         }
 
         @Override
         public State loadGradlePropertiesFrom(File settingsDir) {
-            for (Map.Entry<String, String> entry : loadedGradlePropertiesFiles.mergeProperties(Collections.emptyMap()).entrySet()) {
-                String key = entry.getKey();
-                if (key.startsWith(Project.SYSTEM_PROP_PREFIX + '.')) {
-                    System.setProperty(key.substring((Project.SYSTEM_PROP_PREFIX + '.').length()), entry.getValue());
-                }
+            applyToSystemProperties();
+            return new AppliedToSystemProperties(gradleProperties, settingsDir);
+        }
 
+        private void applyToSystemProperties() {
+            String prefix = Project.SYSTEM_PROP_PREFIX + '.';
+            for (Map.Entry<String, String> entry : gradleProperties.mergeProperties(emptyMap()).entrySet()) {
+                String key = entry.getKey();
+                if (key.startsWith(prefix)) {
+                    System.setProperty(key.substring(prefix.length()), entry.getValue());
+                }
             }
-            return new Loaded(
-                loadedGradlePropertiesFiles,
-                settingsDir
-            );
         }
     }
 
-    private static class Loaded implements State {
+    private static class AppliedToSystemProperties implements State {
 
         private final GradleProperties gradleProperties;
         private final File propertiesDir;
 
-        public Loaded(GradleProperties gradleProperties, File propertiesDir) {
+        public AppliedToSystemProperties(GradleProperties gradleProperties, File propertiesDir) {
             this.gradleProperties = gradleProperties;
             this.propertiesDir = propertiesDir;
         }

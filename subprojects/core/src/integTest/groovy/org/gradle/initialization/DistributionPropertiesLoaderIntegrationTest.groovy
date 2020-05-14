@@ -73,17 +73,17 @@ class DistributionPropertiesLoaderIntegrationTest extends AbstractIntegrationSpe
         then:
         outputContains('system_property_available in buildSrc:                 true')
         outputContains('system_property_available in buildSrc:                 true')
-        outputContains('project_property_available in buildSrc:                false')
+        outputContains('project_property_available in buildSrc:                true')
         outputContains('system_property_available in included buildSrc:        true')
-        outputContains('project_property_available in included buildSrc:       false')
+        outputContains('project_property_available in included buildSrc:       true')
         outputContains('system_property_available in included root:            true')
-        outputContains('project_property_available in included root:           false')
+        outputContains('project_property_available in included root:           true')
         outputContains('system_property_available in root:                     true')
         outputContains('project_property_available in root:                    true')
         outputContains('system_property_available in settings.gradle:          true')
         outputContains('project_property_available in settings.gradle:         true')
         outputContains('system_property_available in included settings.gradle: true')
-        outputContains('project_property_available in included settings.gradle:false')
+        outputContains('project_property_available in included settings.gradle:true')
 
         cleanup:
         executer.withArguments("--stop", "--info").run()

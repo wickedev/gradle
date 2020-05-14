@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-package org.gradle.integtests.tooling.r622
+package org.gradle.integtests.tooling.r65
 
 import org.gradle.integtests.tooling.fixture.TargetGradleVersion
 import org.gradle.integtests.tooling.fixture.ToolingApiVersion
 import org.gradle.integtests.tooling.r60.AbstractToolingApiPropertiesLoaderCrossVersionSpec
 
 @ToolingApiVersion('>=3.0')
-@TargetGradleVersion('>=6.2.2 <6.5')
+@TargetGradleVersion('>=6.5')
 class ToolingApiPropertiesLoaderCrossVersionSpec extends AbstractToolingApiPropertiesLoaderCrossVersionSpec {
 
     @Override
     boolean projectPropertyAvailableInBuildSrc() {
-        false
+        true
     }
 
     @Override
     boolean projectPropertyAvailableInIncludedRoot() {
-        false
+        true
     }
 
     @Override
     boolean projectPropertyAvailableInIncludedBuildSrc() {
-        false
+        true
     }
 }
 
