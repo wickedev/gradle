@@ -31,4 +31,6 @@ public interface IGradlePropertiesLoader {
      * @since 6.2
      */
     GradleProperties loadGradleProperties(File rootDir);
+
+    GradleProperties loadGradlePropertiesFiles(File rootDir);
 }

@@ -25,9 +25,13 @@ import org.gradle.api.internal.SettingsInternal;
 import org.gradle.api.internal.artifacts.DefaultBuildIdentifier;
 import org.gradle.initialization.GradleLauncher;
 import org.gradle.initialization.GradleLauncherFactory;
+import org.gradle.initialization.GradlePropertiesController;
 import org.gradle.initialization.IncludedBuildSpec;
 import org.gradle.initialization.NestedBuildFactory;
 import org.gradle.initialization.RootBuildLifecycleListener;
+import org.gradle.initialization.SettingsLocation;
+import org.gradle.initialization.layout.BuildLayoutConfiguration;
+import org.gradle.initialization.layout.BuildLayoutFactory;
 import org.gradle.internal.build.AbstractBuildState;
 import org.gradle.internal.build.RootBuildState;
 import org.gradle.internal.concurrent.Stoppable;
@@ -75,12 +79,22 @@ class DefaultRootBuildState extends AbstractBuildState implements RootBuildState
         final GradleBuildController buildController = new GradleBuildController(gradleLauncher);
         RootBuildLifecycleListener buildLifecycleListener = listenerManager.getBroadcaster(RootBuildLifecycleListener.class);
         GradleInternal gradle = buildController.getGradle();
-        buildLifecycleListener.afterStart(gradle);
+        loadGradleProperties(gradle);
+        buildLifecycleListener.afterStart(gradle); // FW needs properties here
         try {
             return buildAction.transform(buildController);
         } finally {
             buildLifecycleListener.beforeComplete(gradle);
         }
+    }
+
+    private void loadGradleProperties(GradleInternal gradle) {
+        BuildLayoutFactory buildLayoutFactory = gradle.getServices().get(BuildLayoutFactory.class);
+        GradlePropertiesController gradlePropertiesController = gradle.getServices().get(GradlePropertiesController.class);
+        SettingsLocation settingsLocation = buildLayoutFactory.getLayoutFor(
+            new BuildLayoutConfiguration(getStartParameter())
+        );
+        gradlePropertiesController.loadGradlePropertiesFrom(settingsLocation.getSettingsDir());
     }
 
     @Override

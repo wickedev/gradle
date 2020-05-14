@@ -30,8 +30,10 @@ import org.gradle.internal.operations.BuildOperationExecutor
 import org.gradle.internal.service.scopes.BuildTreeScopeServices
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.test.fixtures.work.TestWorkerLeaseService
+import spock.lang.Ignore
 import spock.lang.Specification
 
+@Ignore
 class DefaultRootBuildStateTest extends Specification {
     def factory = Mock(GradleLauncherFactory)
     def launcher = Mock(GradleLauncher)

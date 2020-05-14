@@ -38,6 +38,7 @@ import org.gradle.initialization.ClassLoaderScopeRegistry
 import org.gradle.initialization.DefaultProjectDescriptor
 import org.gradle.initialization.DefaultSettings
 import org.gradle.initialization.NotifyingBuildLoader
+import org.gradle.initialization.SettingsLocation
 import org.gradle.initialization.SettingsPreparer
 import org.gradle.initialization.SettingsProcessor
 import org.gradle.initialization.TaskExecutionPreparer
@@ -200,7 +201,7 @@ class InstantExecutionHost internal constructor(
                 service()
             ).process(
                 gradle,
-                gradle.settingsLocation,
+                SettingsLocation(rootDir, File(rootDir, "settings.gradle")),
                 gradle.classLoaderScope,
                 gradle.startParameter
             )

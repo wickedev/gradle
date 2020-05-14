@@ -42,4 +42,6 @@ public interface GradlePropertiesController {
      * @throws IllegalStateException if called with a different argument in the same build
      */
     void loadGradlePropertiesFrom(File settingsDir);
+
+    void applyToSystemProperties(File settingsDir);
 }

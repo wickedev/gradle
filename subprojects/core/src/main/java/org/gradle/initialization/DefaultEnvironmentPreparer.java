@@ -34,9 +34,11 @@ public class DefaultEnvironmentPreparer implements EnvironmentPreparer {
 
     @Override
     public void prepareEnvironment(GradleInternal gradle) {
+        /*
         SettingsLocation settingsLocation = locateSettings(gradle.getStartParameter());
         gradle.setSettingsLocation(settingsLocation);
         loadGradleProperties(settingsLocation);
+         */
     }
 
     private SettingsLocation locateSettings(StartParameter startParameter) {

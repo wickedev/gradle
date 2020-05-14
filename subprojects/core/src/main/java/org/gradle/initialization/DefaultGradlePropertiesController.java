@@ -16,11 +16,14 @@
 
 package org.gradle.initialization;
 
+import org.gradle.api.Project;
 import org.gradle.api.internal.properties.GradleProperties;
 
 import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Map;
+
+import static java.util.Collections.emptyMap;
 
 public class DefaultGradlePropertiesController implements GradlePropertiesController {
 
@@ -40,6 +43,11 @@ public class DefaultGradlePropertiesController implements GradlePropertiesContro
     @Override
     public void loadGradlePropertiesFrom(File settingsDir) {
         state = state.loadGradlePropertiesFrom(settingsDir);
+    }
+
+    @Override
+    public void applyToSystemProperties(File settingsDir) {
+        state = state.applyToSystemProperties(settingsDir);
     }
 
     private class SharedGradleProperties implements GradleProperties {
@@ -65,6 +73,8 @@ public class DefaultGradlePropertiesController implements GradlePropertiesContro
         GradleProperties gradleProperties();
 
         State loadGradlePropertiesFrom(File settingsDir);
+
+        State applyToSystemProperties(File settingsDir);
     }
 
     private class NotLoaded implements State {
@@ -77,9 +87,15 @@ public class DefaultGradlePropertiesController implements GradlePropertiesContro
         @Override
         public State loadGradlePropertiesFrom(File settingsDir) {
             return new Loaded(
-                propertiesLoader.loadGradleProperties(settingsDir),
+                propertiesLoader.loadGradlePropertiesFiles(settingsDir),
                 settingsDir
             );
+        }
+
+        @Override
+        public State applyToSystemProperties(File settingsDir) {
+            return loadGradlePropertiesFrom(settingsDir)
+                .applyToSystemProperties(settingsDir);
         }
     }
 
@@ -100,15 +116,60 @@ public class DefaultGradlePropertiesController implements GradlePropertiesContro
 
         @Override
         public State loadGradlePropertiesFrom(File settingsDir) {
-            if (!propertiesDir.equals(settingsDir)) {
-                throw new IllegalStateException(
-                    String.format(
-                        "GradleProperties has already been loaded from '%s' and cannot be loaded from '%s'.",
-                        propertiesDir, settingsDir
-                    )
-                );
-            }
+            validateSettingsDir(propertiesDir, settingsDir);
             return this;
+        }
+
+        @Override
+        public State applyToSystemProperties(File settingsDir) {
+            validateSettingsDir(propertiesDir, settingsDir);
+            String prefix = Project.SYSTEM_PROP_PREFIX + '.';
+            for (Map.Entry<String, String> entry : gradleProperties.mergeProperties(emptyMap()).entrySet()) {
+                String key = entry.getKey();
+                if (key.startsWith(prefix)) {
+                    System.setProperty(key.substring(prefix.length()), entry.getValue());
+                }
+            }
+            return new Applied(gradleProperties, propertiesDir);
+        }
+    }
+
+    private static class Applied implements State {
+
+        private final GradleProperties gradleProperties;
+        private final File propertiesDir;
+
+        private Applied(GradleProperties gradleProperties, File propertiesDir) {
+            this.gradleProperties = gradleProperties;
+            this.propertiesDir = propertiesDir;
+        }
+
+        @Override
+        public GradleProperties gradleProperties() {
+            return gradleProperties;
+        }
+
+        @Override
+        public State loadGradlePropertiesFrom(File settingsDir) {
+            validateSettingsDir(propertiesDir, settingsDir);
+            return this;
+        }
+
+        @Override
+        public State applyToSystemProperties(File settingsDir) {
+            validateSettingsDir(propertiesDir, settingsDir);
+            return this;
+        }
+    }
+
+    private static void validateSettingsDir(File propertiesDir, File settingsDir) {
+        if (!propertiesDir.equals(settingsDir)) {
+            throw new IllegalStateException(
+                String.format(
+                    "GradleProperties has already been loaded from '%s' and cannot be loaded from '%s'.",
+                    propertiesDir, settingsDir
+                )
+            );
         }
     }
 }

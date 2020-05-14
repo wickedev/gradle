@@ -36,20 +36,24 @@ public class DefaultSettingsLoader implements SettingsLoader {
     public static final String BUILD_SRC_PROJECT_PATH = ":" + SettingsInternal.BUILD_SRC;
     private final SettingsProcessor settingsProcessor;
     private final BuildLayoutFactory buildLayoutFactory;
+    private final GradlePropertiesController gradlePropertiesController;
 
     public DefaultSettingsLoader(
         SettingsProcessor settingsProcessor,
-        BuildLayoutFactory buildLayoutFactory
+        BuildLayoutFactory buildLayoutFactory,
+        GradlePropertiesController gradlePropertiesController
     ) {
         this.settingsProcessor = settingsProcessor;
         this.buildLayoutFactory = buildLayoutFactory;
+        this.gradlePropertiesController = gradlePropertiesController;
     }
 
     @Override
     public SettingsInternal loadSettings(GradleInternal gradle) {
         StartParameter startParameter = gradle.getStartParameter();
 
-        SettingsLocation settingsLocation = gradle.getSettingsLocation();
+        SettingsLocation settingsLocation = buildLayoutFactory.getLayoutFor(new BuildLayoutConfiguration(startParameter));
+        gradlePropertiesController.applyToSystemProperties(settingsLocation.getSettingsDir());
 
         SettingsInternal settings = findSettingsAndLoadIfAppropriate(gradle, startParameter, settingsLocation, gradle.getClassLoaderScope());
         ProjectSpec spec = ProjectSpecs.forStartParameter(startParameter, settings);
@@ -82,7 +86,6 @@ public class DefaultSettingsLoader implements SettingsLoader {
         StartParameter noSearchParameter = startParameter.newInstance();
         ((StartParameterInternal) noSearchParameter).useEmptySettingsWithoutDeprecationWarning();
         BuildLayout layout = buildLayoutFactory.getLayoutFor(new BuildLayoutConfiguration(noSearchParameter));
-        gradle.setSettingsLocation(layout);
         SettingsInternal settings = findSettingsAndLoadIfAppropriate(gradle, noSearchParameter, layout, classLoaderScope);
 
         // Set explicit build file, if required

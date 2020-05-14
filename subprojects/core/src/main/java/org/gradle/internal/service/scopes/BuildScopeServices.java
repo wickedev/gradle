@@ -407,7 +407,8 @@ public class BuildScopeServices extends DefaultServiceRegistry {
         ProjectStateRegistry projectRegistry,
         PublicBuildPath publicBuildPath,
         Instantiator instantiator,
-        BuildLayoutFactory buildLayoutFactory
+        BuildLayoutFactory buildLayoutFactory,
+        GradlePropertiesController gradlePropertiesController
     ) {
         return new DefaultSettingsLoaderFactory(
             settingsProcessor,
@@ -415,7 +416,8 @@ public class BuildScopeServices extends DefaultServiceRegistry {
             projectRegistry,
             publicBuildPath,
             instantiator,
-            buildLayoutFactory
+            buildLayoutFactory,
+            gradlePropertiesController
         );
     }
 

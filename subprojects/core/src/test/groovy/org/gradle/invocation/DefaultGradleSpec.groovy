@@ -35,7 +35,6 @@ import org.gradle.configuration.internal.TestListenerBuildOperationDecorator
 import org.gradle.execution.taskgraph.TaskExecutionGraphInternal
 import org.gradle.groovy.scripts.ScriptSource
 import org.gradle.initialization.ClassLoaderScopeRegistry
-import org.gradle.initialization.SettingsLocation
 import org.gradle.internal.build.DefaultPublicBuildPath
 import org.gradle.internal.build.PublicBuildPath
 import org.gradle.internal.event.DefaultListenerManager
@@ -336,21 +335,6 @@ class DefaultGradleSpec extends Specification {
 
         then:
         1 * listenerManager.useLogger(logger)
-    }
-
-    def "get settings location throws exception when settings is not available"() {
-        when:
-        gradle.settingsLocation
-
-        then:
-        thrown IllegalStateException
-
-        when:
-        def settingsLocation = Stub(SettingsLocation)
-        gradle.settingsLocation = settingsLocation
-
-        then:
-        gradle.settingsLocation == settingsLocation
     }
 
     def "get settings throws exception when settings is not available"() {

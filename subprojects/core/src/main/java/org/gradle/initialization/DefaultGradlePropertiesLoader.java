@@ -39,6 +39,26 @@ public class DefaultGradlePropertiesLoader implements IGradlePropertiesLoader {
     }
 
     @Override
+    public GradleProperties loadGradlePropertiesFiles(File rootDir) {
+        Map<String, String> defaultProperties = new HashMap<>();
+        Map<String, String> overrideProperties = new HashMap<>();
+
+        addGradleProperties(defaultProperties, new File(startParameter.getGradleHomeDir(), GRADLE_PROPERTIES));
+        addGradleProperties(defaultProperties, new File(rootDir, GRADLE_PROPERTIES));
+        addGradleProperties(overrideProperties, new File(startParameter.getGradleUserHomeDir(), GRADLE_PROPERTIES));
+
+        for (Map.Entry<String, String> entry : startParameter.getSystemPropertiesArgs().entrySet()) {
+            overrideProperties.put("systemProp." + entry.getKey(), entry.getValue());
+        }
+
+        overrideProperties.putAll(getEnvProjectProperties(getAllEnvProperties()));
+        overrideProperties.putAll(getSystemProjectProperties(getAllSystemProperties()));
+        overrideProperties.putAll(startParameter.getProjectProperties());
+
+        return new DefaultGradleProperties(defaultProperties, overrideProperties);
+    }
+
+    @Override
     public GradleProperties loadGradleProperties(File rootDir) {
         return loadProperties(rootDir, startParameter, getAllSystemProperties(), getAllEnvProperties());
     }
