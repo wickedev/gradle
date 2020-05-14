@@ -29,7 +29,7 @@ import org.gradle.internal.Factory
  */
 class AndroidGradlePluginVersions {
 
-    public static final String OVERRIDE_VERSION_CHECK = '-Dcom.android.build.gradle.overrideVersionCheck=true'
+    public static final String OVERRIDE_VERSION_CHECK = '-Pandroid.overrideVersionCheck=true'
 
     private static final String AGP_NIGHTLY_REPOSITORY_DECLARATION = '''
         maven {
