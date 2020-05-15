@@ -24,8 +24,11 @@ import org.gradle.instantexecution.TooManyInstantExecutionProblemsException
 import org.gradle.instantexecution.extensions.getBroadcaster
 import org.gradle.instantexecution.initialization.InstantExecutionStartParameter
 import org.gradle.internal.event.ListenerManager
+import org.gradle.internal.service.scopes.Scopes
+import org.gradle.internal.service.scopes.ServiceScope
 
 
+@ServiceScope(Scopes.BuildTree)
 class InstantExecutionProblems(
 
     private
@@ -98,7 +101,9 @@ class InstantExecutionProblems(
     inner class BuildFinishedProblemsHandler : BuildAdapter() {
 
         override fun buildFinished(result: BuildResult) {
-            if (problems.isEmpty()) return
+            if (result.gradle?.parent != null || problems.isEmpty()) {
+                return
+            }
             report.writeReportFiles(problems)
             when {
                 isConsoleSummaryRequested -> {

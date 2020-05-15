@@ -1,8 +1,5 @@
-import org.gradle.gradlebuild.unittestandcompile.ModuleType
-
 plugins {
-    `java-library`
-    gradlebuild.`strict-compile`
+    gradlebuild.distribution.`plugins-api-java`
 }
 
 dependencies {
@@ -36,6 +33,6 @@ dependencies {
     testFixturesApi(testFixtures(project(":diagnostics")))
 }
 
-gradlebuildJava {
-    moduleType = ModuleType.CORE
+classycle {
+    excludePatterns.set(listOf("org/gradle/**"))
 }

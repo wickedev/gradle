@@ -28,6 +28,8 @@ fun BuildType.applyPerformanceTestSettings(os: Os = Os.linux, timeout: Int = 30)
     detectHangingBuilds = false
     requirements {
         doesNotContain("teamcity.agent.name", "ec2")
+        // US region agents have name "EC2-XXX"
+        doesNotContain("teamcity.agent.name", "EC2")
     }
     params {
         param("env.GRADLE_OPTS", "-Xmx1536m -XX:MaxPermSize=384m")
@@ -41,7 +43,7 @@ fun performanceTestCommandLine(task: String, baselines: String, extraParameters:
         "$task --baselines $baselines $extraParameters",
         "-x prepareSamples",
         "-Porg.gradle.performance.branchName=%teamcity.build.branch%",
-        "-Porg.gradle.performance.db.mysql.url=%performance.db.mysql.url% -Porg.gradle.performance.db.username=%performance.db.username% -Porg.gradle.performance.db.password=%performance.db.password.tcagent%",
+        "-Porg.gradle.performance.db.url=%performance.db.url% -Porg.gradle.performance.db.username=%performance.db.username% -Porg.gradle.performance.db.password=%performance.db.password.tcagent%",
         "-PteamCityToken=%teamcity.user.bot-gradle.token%",
         "-PtestJavaHome=$testJavaHome"
 )

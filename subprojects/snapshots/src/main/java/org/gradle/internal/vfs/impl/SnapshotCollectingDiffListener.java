@@ -16,6 +16,7 @@
 
 package org.gradle.internal.vfs.impl;
 
+import org.gradle.internal.file.FileMetadata.AccessType;
 import org.gradle.internal.snapshot.CompleteFileSystemLocationSnapshot;
 import org.gradle.internal.snapshot.FileSystemNode;
 import org.gradle.internal.snapshot.SnapshotHierarchy;
@@ -25,15 +26,13 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-class SnapshotCollectingDiffListener implements SnapshotHierarchy.NodeDiffListener {
-    private final List<CompleteFileSystemLocationSnapshot> removedSnapshots;
-    private final List<CompleteFileSystemLocationSnapshot> addedSnapshots;
+public class SnapshotCollectingDiffListener implements SnapshotHierarchy.NodeDiffListener {
+    private final List<CompleteFileSystemLocationSnapshot> removedSnapshots = new ArrayList<>();
+    private final List<CompleteFileSystemLocationSnapshot> addedSnapshots = new ArrayList<>();
     private final Predicate<String> watchFilter;
 
     public SnapshotCollectingDiffListener(Predicate<String> watchFilter) {
         this.watchFilter = watchFilter;
-        removedSnapshots = new ArrayList<>();
-        addedSnapshots = new ArrayList<>();
     }
 
     public void publishSnapshotDiff(SnapshotHierarchy.SnapshotDiffListener snapshotDiffListener) {
@@ -44,7 +43,7 @@ class SnapshotCollectingDiffListener implements SnapshotHierarchy.NodeDiffListen
 
     private void extractRootSnapshots(FileSystemNode rootNode, Consumer<CompleteFileSystemLocationSnapshot> consumer) {
         rootNode.accept(snapshot -> {
-            if (watchFilter.test(snapshot.getAbsolutePath())) {
+            if (snapshot.getAccessType() == AccessType.DIRECT && watchFilter.test(snapshot.getAbsolutePath())) {
                 consumer.accept(snapshot);
             }
         });

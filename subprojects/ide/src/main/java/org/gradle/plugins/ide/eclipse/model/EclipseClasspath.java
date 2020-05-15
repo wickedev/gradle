@@ -54,8 +54,10 @@ import java.util.Set;
  * if the defaults don't match your needs.
  *
  * <pre class='autoTested'>
- * apply plugin: 'java'
- * apply plugin: 'eclipse'
+ * plugins {
+ *     id 'java'
+ *     id 'eclipse'
+ * }
  *
  * configurations {
  *   provided
@@ -95,8 +97,10 @@ import java.util.Set;
  * Examples of advanced configuration:
  *
  * <pre class='autoTested'>
- * apply plugin: 'java'
- * apply plugin: 'eclipse'
+ * plugins {
+ *     id 'java'
+ *     id 'eclipse'
+ * }
  *
  * eclipse {
  *   classpath {
@@ -335,6 +339,8 @@ public class EclipseClasspath {
         return classpathFactory.createEntries();
     }
 
+
+    @SuppressWarnings("unchecked")
     public void mergeXmlClasspath(Classpath xmlClasspath) {
         file.getBeforeMerged().execute(xmlClasspath);
         List<ClasspathEntry> entries = resolveDependencies();

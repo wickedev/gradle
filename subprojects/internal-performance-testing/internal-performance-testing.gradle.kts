@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 import accessors.java
-import org.gradle.gradlebuild.unittestandcompile.ModuleType
-
 plugins {
-    `java-library`
-    gradlebuild.classycle
+    gradlebuild.internal.java
 }
 
 val reports by configurations.creating
@@ -71,10 +68,6 @@ dependencies {
     implementation(testFixtures(project(":toolingApi")))
 
     runtimeOnly("mysql:mysql-connector-java:8.0.17")
-}
-
-gradlebuildJava {
-    moduleType = ModuleType.INTERNAL
 }
 
 val generatedResourcesDir = gradlebuildJava.generatedResourcesDir

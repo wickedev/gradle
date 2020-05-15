@@ -65,6 +65,8 @@ import org.gradle.api.internal.project.taskfactory.ITaskFactory;
 import org.gradle.api.internal.project.taskfactory.TaskClassInfoStore;
 import org.gradle.api.internal.project.taskfactory.TaskFactory;
 import org.gradle.api.internal.properties.GradleProperties;
+import org.gradle.api.internal.provider.ConfigurationTimeBarrier;
+import org.gradle.api.internal.provider.DefaultConfigurationTimeBarrier;
 import org.gradle.api.internal.provider.DefaultProviderFactory;
 import org.gradle.api.internal.provider.DefaultValueSourceProviderFactory;
 import org.gradle.api.internal.provider.ValueSourceProviderFactory;
@@ -104,7 +106,6 @@ import org.gradle.execution.ProjectConfigurer;
 import org.gradle.execution.TaskPathProjectEvaluator;
 import org.gradle.groovy.scripts.DefaultScriptCompilerFactory;
 import org.gradle.groovy.scripts.ScriptCompilerFactory;
-import org.gradle.internal.scripts.ScriptExecutionListener;
 import org.gradle.groovy.scripts.internal.BuildOperationBackedScriptCompilationHandler;
 import org.gradle.groovy.scripts.internal.BuildScopeInMemoryCachingScriptClassCompiler;
 import org.gradle.groovy.scripts.internal.CrossBuildInMemoryCachingScriptClassCache;
@@ -177,6 +178,7 @@ import org.gradle.internal.operations.logging.DefaultBuildOperationLoggerFactory
 import org.gradle.internal.reflect.Instantiator;
 import org.gradle.internal.resource.DefaultTextFileResourceLoader;
 import org.gradle.internal.resource.TextFileResourceLoader;
+import org.gradle.internal.scripts.ScriptExecutionListener;
 import org.gradle.internal.service.CachingServiceLocator;
 import org.gradle.internal.service.DefaultServiceRegistry;
 import org.gradle.internal.service.ServiceRegistry;
@@ -256,7 +258,7 @@ public class BuildScopeServices extends DefaultServiceRegistry {
     }
 
     protected ListenerManager createListenerManager(ListenerManager listenerManager) {
-        return listenerManager.createChild();
+        return listenerManager.createChild(Scopes.Build);
     }
 
     protected ClassPathRegistry createClassPathRegistry() {
@@ -291,9 +293,11 @@ public class BuildScopeServices extends DefaultServiceRegistry {
         IsolatableFactory isolatableFactory,
         ServiceRegistry services,
         GradleProperties gradleProperties,
-        ListenerManager listenerManager
+        ListenerManager listenerManager,
+        ConfigurationTimeBarrier configurationTimeBarrier
     ) {
         return new DefaultValueSourceProviderFactory(
+            configurationTimeBarrier,
             listenerManager,
             instantiatorFactory,
             isolatableFactory,
@@ -302,8 +306,15 @@ public class BuildScopeServices extends DefaultServiceRegistry {
         );
     }
 
-    protected ProviderFactory createProviderFactory(ValueSourceProviderFactory valueSourceProviderFactory) {
-        return new DefaultProviderFactory(valueSourceProviderFactory);
+    protected ConfigurationTimeBarrier createConfigurationTimeBarrier(ListenerManager listenerManager) {
+        return new DefaultConfigurationTimeBarrier(listenerManager);
+    }
+
+    protected ProviderFactory createProviderFactory(
+        Instantiator instantiator,
+        ValueSourceProviderFactory valueSourceProviderFactory
+    ) {
+        return instantiator.newInstance(DefaultProviderFactory.class, valueSourceProviderFactory);
     }
 
     protected ActorFactory createActorFactory() {
@@ -350,17 +361,17 @@ public class BuildScopeServices extends DefaultServiceRegistry {
     protected FileCacheBackedScriptClassCompiler createFileCacheBackedScriptClassCompiler(
         BuildOperationExecutor buildOperationExecutor,
         CacheRepository cacheRepository,
-        ClassLoaderCache classLoaderCache,
         ClassLoaderHierarchyHasher classLoaderHierarchyHasher,
         DefaultScriptCompilationHandler scriptCompilationHandler,
+        CachedClasspathTransformer classpathTransformer,
         ProgressLoggerFactory progressLoggerFactory
     ) {
         return new FileCacheBackedScriptClassCompiler(
             cacheRepository,
             new BuildOperationBackedScriptCompilationHandler(scriptCompilationHandler, buildOperationExecutor),
             progressLoggerFactory,
-            classLoaderCache,
-            classLoaderHierarchyHasher);
+            classLoaderHierarchyHasher,
+            classpathTransformer);
     }
 
     protected ScriptPluginFactory createScriptPluginFactory(InstantiatorFactory instantiatorFactory, BuildOperationExecutor buildOperationExecutor, UserCodeApplicationContext userCodeApplicationContext) {

@@ -98,6 +98,10 @@ import java.util.concurrent.Callable;
 
 import static org.gradle.util.GUtil.uncheckedCall;
 
+/**
+ * @deprecated This class will be removed in Gradle 7.0. Please use {@link org.gradle.api.DefaultTask} instead.
+ */
+@Deprecated
 public abstract class AbstractTask implements TaskInternal, DynamicObjectAware {
     private static final Logger BUILD_LOGGER = Logging.getLogger(Task.class);
     private static final ThreadLocal<TaskInfo> NEXT_INSTANCE = new ThreadLocal<TaskInfo>();
@@ -176,8 +180,8 @@ public abstract class AbstractTask implements TaskInternal, DynamicObjectAware {
         taskMutator = new TaskMutator(this);
         taskInputs = new DefaultTaskInputs(this, taskMutator, propertyWalker, fileCollectionFactory);
         taskOutputs = new DefaultTaskOutputs(this, taskMutator, propertyWalker, fileCollectionFactory);
-        taskDestroyables = new DefaultTaskDestroyables(taskMutator);
-        taskLocalState = new DefaultTaskLocalState(taskMutator);
+        taskDestroyables = new DefaultTaskDestroyables(taskMutator, fileCollectionFactory);
+        taskLocalState = new DefaultTaskLocalState(taskMutator, fileCollectionFactory);
 
         this.dependencies = new DefaultTaskDependency(tasks, ImmutableSet.of(taskInputs));
 

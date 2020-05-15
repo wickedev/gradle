@@ -1,9 +1,7 @@
 import org.gradle.gradlebuild.testing.integrationtests.cleanup.WhenNotEmpty
-import org.gradle.gradlebuild.unittestandcompile.ModuleType
 
 plugins {
-    `java-library`
-    gradlebuild.classycle
+    gradlebuild.distribution.`plugins-api-java`
 }
 
 dependencies {
@@ -39,6 +37,8 @@ dependencies {
     implementation(library("asm_commons"))
     implementation(library("inject"))
 
+    runtimeOnly(project(":javaCompilerPlugin"))
+
     testImplementation(project(":baseServicesGroovy"))
     testImplementation(library("commons_io"))
     testImplementation(testFixtures(project(":core")))
@@ -63,8 +63,8 @@ dependencies {
     integTestRuntimeOnly(project(":plugins"))
 }
 
-gradlebuildJava {
-    moduleType = ModuleType.CORE
+strictCompile {
+    ignoreDeprecations() // this project currently uses many deprecated part from 'platform-jvm'
 }
 
 classycle {

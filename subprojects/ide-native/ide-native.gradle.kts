@@ -1,5 +1,3 @@
-import org.gradle.gradlebuild.unittestandcompile.ModuleType
-
 /*
  * Copyright 2014 the original author or authors.
  *
@@ -16,8 +14,7 @@ import org.gradle.gradlebuild.unittestandcompile.ModuleType
  * limitations under the License.
  */
 plugins {
-    `java-library`
-    gradlebuild.classycle
+    gradlebuild.distribution.`plugins-api-java`
 }
 
 dependencies {
@@ -58,8 +55,3 @@ dependencies {
     testFixturesImplementation(library("guava"))
     testFixturesImplementation(testFixtures(project(":ide")))
 }
-
-gradlebuildJava {
-    moduleType = ModuleType.CORE
-}
-

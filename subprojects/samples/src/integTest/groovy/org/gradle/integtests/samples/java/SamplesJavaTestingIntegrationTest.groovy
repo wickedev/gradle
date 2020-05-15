@@ -28,7 +28,7 @@ class SamplesJavaTestingIntegrationTest extends AbstractSampleIntegrationTest {
     @Rule
     Sample sample = new Sample(testDirectoryProvider)
 
-    @UsesSample("userguide/java/basic/groovy")
+    @UsesSample("java/basic/groovy")
     def "can execute simple Java tests"() {
         given:
         executer.inDirectory(sample.dir)
@@ -65,7 +65,7 @@ class SamplesJavaTestingIntegrationTest extends AbstractSampleIntegrationTest {
         assertTestRun(xmlResults2, "quickUiCheck")
     }
 
-    @UsesSample("userguide/java/customDirs/groovy")
+    @UsesSample("java/customDirs/groovy")
     def "can change the destination for test results and reports"() {
         given:
         executer.inDirectory(sample.dir)
@@ -106,7 +106,7 @@ class SamplesJavaTestingIntegrationTest extends AbstractSampleIntegrationTest {
         getStandardTestReportDir("util", "").file("index.html").assertDoesNotExist()
     }
 
-    @UsesSample("testing/junit/categories/groovy")
+    @UsesSample("testing/junit-categories/groovy")
     def "can filter tests by JUnit category"() {
         given:
         executer.inDirectory(sample.dir)
@@ -123,7 +123,7 @@ class SamplesJavaTestingIntegrationTest extends AbstractSampleIntegrationTest {
         xmlResults.testcase.find { it.@name == "a" }
     }
 
-    @UsesSample("testing/junitplatform/tagging/groovy")
+    @UsesSample("testing/junitplatform-tagging/groovy")
     def "can filter tests by JUnit Platform tag"() {
         given:
         executer.inDirectory(sample.dir)
@@ -140,7 +140,7 @@ class SamplesJavaTestingIntegrationTest extends AbstractSampleIntegrationTest {
         assertTestRun(xmlResults, "fastTest()")
     }
 
-    @UsesSample("testing/testng/groups/groovy")
+    @UsesSample("testing/testng-groups/groovy")
     @ToBeFixedForInstantExecution
     def "can filter tests by TestNG group"() {
         given:
@@ -160,7 +160,7 @@ class SamplesJavaTestingIntegrationTest extends AbstractSampleIntegrationTest {
         getTestResultsFile(sample, "org.gradle.testng.SimpleIntegrationTest").assertDoesNotExist()
     }
 
-    @UsesSample("testing/junitplatform/jupiter/groovy")
+    @UsesSample("testing/junitplatform-jupiter/groovy")
     def "can run tests using JUnit Jupiter"() {
         given:
         executer.inDirectory(sample.dir)
@@ -177,7 +177,7 @@ class SamplesJavaTestingIntegrationTest extends AbstractSampleIntegrationTest {
         assertTestsRunCount(xmlResults, 5)
     }
 
-    @UsesSample("testing/junitplatform/mix/groovy")
+    @UsesSample("testing/junitplatform-mix/groovy")
     def "can run older JUnit tests with JUnit Jupiter"() {
         given:
         executer.inDirectory(sample.dir)
@@ -200,7 +200,7 @@ class SamplesJavaTestingIntegrationTest extends AbstractSampleIntegrationTest {
             1)
     }
 
-    @UsesSample("testing/junitplatform/engine/groovy")
+    @UsesSample("testing/junitplatform-engine/groovy")
     def "can run JUnit Platform tests with a subset of engines"() {
         given:
         executer.inDirectory(sample.dir)
@@ -218,7 +218,7 @@ class SamplesJavaTestingIntegrationTest extends AbstractSampleIntegrationTest {
             1)
     }
 
-    @UsesSample("testing/testng/preserveorder/groovy")
+    @UsesSample("testing/testng-preserveorder/groovy")
     @ToBeFixedForInstantExecution
     def "can use the preserveOrder option with TestNG tests"() {
         given:
@@ -242,7 +242,7 @@ class SamplesJavaTestingIntegrationTest extends AbstractSampleIntegrationTest {
             2)
     }
 
-    @UsesSample("testing/testng/groupbyinstances/groovy")
+    @UsesSample("testing/testng-groupbyinstances/groovy")
     @ToBeFixedForInstantExecution
     def "can use the groupByInstances option with TestNG tests"() {
         given:
@@ -260,7 +260,7 @@ class SamplesJavaTestingIntegrationTest extends AbstractSampleIntegrationTest {
         xmlResults.testcase.@name*.text() == ["test1", "test2", "test1", "test2"]
     }
 
-    @UsesSample("userguide/java/basic/groovy")
+    @UsesSample("java/basic/groovy")
     def "can run simple Java integration tests"() {
         given:
         executer.inDirectory(sample.dir)
@@ -277,7 +277,7 @@ class SamplesJavaTestingIntegrationTest extends AbstractSampleIntegrationTest {
             1)
     }
 
-    @UsesSample("userguide/java/basic/groovy")
+    @UsesSample("java/basic/groovy")
     def "can skip the tests with an `onlyIf` condition"() {
         given:
         executer.inDirectory(sample.dir).withArgument("-PmySkipTests")

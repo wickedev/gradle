@@ -26,6 +26,10 @@ import java.io.File
 internal
 sealed class InstantExecutionCacheFingerprint {
 
+    data class InitScripts(
+        val fingerprints: List<InputFile>
+    ) : InstantExecutionCacheFingerprint()
+
     data class TaskInputs(
         val taskPath: String,
         val fileSystemInputs: FileCollectionInternal,
@@ -39,6 +43,10 @@ sealed class InstantExecutionCacheFingerprint {
 
     data class ValueSource(
         val obtainedValue: ObtainedValue
+    ) : InstantExecutionCacheFingerprint()
+
+    data class UndeclaredSystemProperty(
+        val key: String
     ) : InstantExecutionCacheFingerprint()
 }
 

@@ -35,7 +35,7 @@ import kotlin.reflect.KClass
 
 
 object PropertyNames {
-    const val dbUrl = "org.gradle.performance.db.mysql.url"
+    const val dbUrl = "org.gradle.performance.db.url"
     const val dbUsername = "org.gradle.performance.db.username"
     const val dbPassword = "org.gradle.performance.db.password"
 
@@ -59,8 +59,6 @@ object Config {
     const val performanceTestResultsJson = "perf-results.json"
 
     const val teamCityUrl = "https://builds.gradle.org/"
-
-    const val adhocTestDbUrl = "jdbc:h2:./build/database"
 }
 
 
@@ -131,17 +129,12 @@ class PerformanceTestPlugin : Plugin<Project> {
                 extendsFrom(testRuntimeOnly)
             }
 
-            val performanceTestRuntimeClasspath by getting
-            "partialDistribution" {
-                extendsFrom(performanceTestRuntimeClasspath)
-            }
-
             create("junit")
         }
 
         dependencies {
             "performanceTestImplementation"(project(":internalPerformanceTesting"))
-            "junit"("junit:junit:4.12")
+            "junit"("junit:junit:4.13")
         }
     }
 
@@ -254,7 +247,6 @@ class PerformanceTestPlugin : Plugin<Project> {
         create("fullPerformanceTest")
 
         create("performanceAdhocTest") {
-            addDatabaseParameters(mapOf(PropertyNames.dbUrl to Config.adhocTestDbUrl))
             performanceReporter = createPerformanceReporter()
             channel = "adhoc"
             outputs.doNotCacheIf("Is adhoc performance test") { true }

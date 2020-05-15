@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-import org.gradle.gradlebuild.unittestandcompile.ModuleType
-
 plugins {
-    `java-library`
+    gradlebuild.distribution.`plugins-api-java`
 }
 
 dependencies {
@@ -37,6 +35,7 @@ dependencies {
     implementation(project(":plugins"))
     implementation(project(":reporting"))
     implementation(project(":dependencyManagement"))
+    implementation(project(":processServices"))
 
     implementation(library("groovy"))
     implementation(library("guava"))
@@ -44,7 +43,6 @@ dependencies {
 
     testImplementation(project(":baseServicesGroovy"))
     testImplementation(project(":files"))
-    testImplementation(project(":processServices"))
     testImplementation(project(":resources"))
     testImplementation(library("slf4j_api"))
     testImplementation(library("commons_io"))
@@ -62,8 +60,10 @@ dependencies {
     integTestRuntimeOnly(project(":testingJunitPlatform"))
 }
 
-gradlebuildJava {
-    moduleType = ModuleType.CORE
+classycle {
+    excludePatterns.set(listOf("org/gradle/api/internal/tasks/scala/**",
+        // Unable to change package of public API
+        "org/gradle/api/tasks/ScalaRuntime*"))
 }
 
 tasks.named<Test>("integTest") {

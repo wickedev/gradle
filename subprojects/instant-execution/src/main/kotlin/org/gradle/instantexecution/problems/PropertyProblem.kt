@@ -25,7 +25,8 @@ import kotlin.reflect.KClass
 data class PropertyProblem internal constructor(
     val trace: PropertyTrace,
     val message: StructuredMessage,
-    val exception: Throwable? = null
+    val exception: Throwable? = null,
+    val documentationSection: String? = null
 )
 
 
@@ -128,7 +129,7 @@ sealed class PropertyTrace {
                 quoted(trace.type.name)
             }
             is Unknown -> {
-                append("unknown property")
+                append("unknown location")
             }
         }
     }

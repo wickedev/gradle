@@ -32,39 +32,57 @@ class LifecyclePlugin : Plugin<Project> {
 
     private
     val compileAllBuild = "compileAllBuild"
+
     private
     val sanityCheck = "sanityCheck"
 
     private
     val quickTest = "quickTest"
+
     private
     val platformTest = "platformTest"
+
     private
     val quickFeedbackCrossVersionTest = "quickFeedbackCrossVersionTest"
+
     private
     val allVersionsCrossVersionTest = "allVersionsCrossVersionTest"
+
     private
     val allVersionsIntegMultiVersionTest = "allVersionsIntegMultiVersionTest"
+
     private
     val parallelTest = "parallelTest"
+
     private
     val noDaemonTest = "noDaemonTest"
+
     private
     val instantTest = "instantTest"
+
     private
     val vfsRetentionTest = "vfsRetentionTest"
+
     private
     val soakTest = "soakTest"
+
     private
     val forceRealizeDependencyManagementTest = "forceRealizeDependencyManagementTest"
 
     override fun apply(project: Project): Unit = project.run {
         setupGlobalState()
+        sharedDependencyAndQualityConfigs()
 
         subprojects {
             tasks.registerCITestDistributionLifecycleTasks()
-            plugins.withId("gradlebuild.java-projects") {
+            plugins.withId("gradlebuild.java-library") {
                 tasks.registerEarlyFeedbackLifecycleTasks()
+                tasks.named(quickTest) {
+                    dependsOn("test")
+                }
+                tasks.named(platformTest) {
+                    dependsOn("test")
+                }
             }
             plugins.withId("gradlebuild.integration-tests") {
                 tasks.configureCIIntegrationTestDistributionLifecycleTasks()
@@ -72,11 +90,15 @@ class LifecyclePlugin : Plugin<Project> {
             plugins.withId("gradlebuild.cross-version-tests") {
                 tasks.configureCICrossVersionTestDistributionLifecycleTasks()
             }
+            plugins.withId("gradlebuild.publish-public-libraries") {
+                tasks.registerPublishLibrariesPromotionTasks()
+            }
         }
+        tasks.registerDistributionsPromotionTasks()
     }
 
     private
-    fun Project.setupGlobalState(): Unit = project.run {
+    fun Project.setupGlobalState() {
         if (needsToIgnoreIncomingBuildReceipt()) {
             globalProperty("ignoreIncomingBuildReceipt" to true)
         }
@@ -88,6 +110,17 @@ class LifecyclePlugin : Plugin<Project> {
         }
         if (needsToUseAllDistribution()) {
             globalProperty("useAllDistribution" to true)
+        }
+    }
+
+    private
+    fun Project.sharedDependencyAndQualityConfigs() {
+        // TODO remove this cross project configuration by declaring dependency coordinates as fields in a Kotlin object and the versions in the platform directly
+        apply(from = "gradle/dependencies.gradle")
+        apply(from = "gradle/test-dependencies.gradle")
+        apply(from = "gradle/remove-teamcity-temp-property.gradle") // https://github.com/gradle/gradle-private/issues/2463
+        allprojects {
+            apply(plugin = "gradlebuild.dependencies-metadata-rules")
         }
     }
 
@@ -123,9 +156,35 @@ class LifecyclePlugin : Plugin<Project> {
             description = "Run all basic checks (without tests) - to be run locally and on CI for early feedback"
             group = "verification"
             dependsOn(
-                "compileAll", ":docs:checkstyleApi", "codeQuality", ":allIncubationReportsZip",
+                "compileAll", ":docs:checkstyleApi", "codeQuality", ":internalBuildReports:allIncubationReportsZip",
                 ":distributions:checkBinaryCompatibility", ":docs:javadocAll",
                 ":architectureTest:test", ":toolingApi:toolingApiShadedJar")
+        }
+    }
+
+    /**
+     * Task that are called by the (currently separate) promotion build running on CI.
+     */
+    private
+    fun TaskContainer.registerDistributionsPromotionTasks() {
+        register("packageBuild") {
+            description = "Build production distros and smoke test them"
+            group = "build"
+            dependsOn(":distributions:verifyIsProductionBuildEnvironment", ":distributions:buildDists",
+                ":distributions:integTest", ":docs:releaseNotes", ":docs:checkSamples")
+        }
+    }
+
+    /**
+     * Task that are called by the (currently separate) promotion build running on CI.
+     */
+    private
+    fun TaskContainer.registerPublishLibrariesPromotionTasks() {
+        register("promotionBuild") {
+            description = "Build production distros, smoke test them and publish"
+            group = "publishing"
+            dependsOn(":distributions:verifyIsProductionBuildEnvironment", ":distributions:buildDists",
+                ":distributions:integTest", ":docs:releaseNotes", "publish")
         }
     }
 
@@ -193,11 +252,11 @@ class LifecyclePlugin : Plugin<Project> {
     private
     fun TaskContainer.configureCIIntegrationTestDistributionLifecycleTasks() {
         named(quickTest) {
-            dependsOn("test", "integTest")
+            dependsOn("integTest")
         }
 
         named(platformTest) {
-            dependsOn("test", "forkingIntegTest")
+            dependsOn("forkingIntegTest")
         }
 
         named(allVersionsIntegMultiVersionTest) {
@@ -265,4 +324,5 @@ class LifecyclePlugin : Plugin<Project> {
 
     private
     fun Project.isRequestedTask(taskName: String) = gradle.startParameter.taskNames.contains(taskName)
+        || gradle.startParameter.taskNames.any { it.contains(":$taskName") }
 }

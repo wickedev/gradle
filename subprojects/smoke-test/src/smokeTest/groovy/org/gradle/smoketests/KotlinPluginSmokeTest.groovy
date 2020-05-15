@@ -17,6 +17,7 @@
 package org.gradle.smoketests
 
 import org.gradle.integtests.fixtures.ToBeFixedForInstantExecution
+import org.gradle.integtests.fixtures.UnsupportedWithInstantExecution
 import org.gradle.integtests.fixtures.android.AndroidHome
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
@@ -27,9 +28,19 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class KotlinPluginSmokeTest extends AbstractSmokeTest {
 
+    private static final String NO_INSTANT_EXECUTION_ITERATION_MATCHER = ".*kotlin=1\\.3\\.[2-6].*"
+    private static final String INSTANT_EXECUTION_ITERATION_MATCHER = ".*kotlin=1\\.3\\.[7].*"
+
+    // TODO:instant-execution remove once fixed upstream
+    @Override
+    protected int maxInstantExecutionProblems() {
+        return 200
+    }
+
     @Unroll
-    @ToBeFixedForInstantExecution
-    def 'kotlin #version plugin, workers=#workers'() {
+    @UnsupportedWithInstantExecution(iterationMatchers = NO_INSTANT_EXECUTION_ITERATION_MATCHER)
+    @ToBeFixedForInstantExecution(because = "run task", iterationMatchers = INSTANT_EXECUTION_ITERATION_MATCHER)
+    def 'kotlin jvm (kotlin=#version, workers=#workers)'() {
         given:
         useSample("kotlin-example")
         replaceVariablesInBuildFile(kotlinVersion: version)
@@ -52,8 +63,8 @@ class KotlinPluginSmokeTest extends AbstractSmokeTest {
     }
 
     @Unroll
-    @ToBeFixedForInstantExecution
-    def '#sampleName kotlin #kotlinPluginVersion android #androidPluginVersion plugins, workers=#workers'() {
+    @UnsupportedWithInstantExecution(iterationMatchers = [NO_INSTANT_EXECUTION_ITERATION_MATCHER, AGP_3_ITERATION_MATCHER, AGP_4_0_ITERATION_MATCHER])
+    def "kotlin android on sample '#sampleName' (kotlin=#kotlinPluginVersion, agp=#androidPluginVersion, workers=#workers)"() {
         given:
         AndroidHome.assertIsSet()
         useSample(sampleName)
@@ -97,8 +108,8 @@ class KotlinPluginSmokeTest extends AbstractSmokeTest {
     }
 
     @Unroll
-    @ToBeFixedForInstantExecution
-    def 'kotlin js #version plugin, workers=#workers'() {
+    @UnsupportedWithInstantExecution(iterationMatchers = NO_INSTANT_EXECUTION_ITERATION_MATCHER)
+    def 'kotlin javascript (kotlin=#version, workers=#workers)'() {
         given:
         useSample("kotlin-js-sample")
         withKotlinBuildFile()
@@ -126,8 +137,8 @@ class KotlinPluginSmokeTest extends AbstractSmokeTest {
     }
 
     @Unroll
-    @ToBeFixedForInstantExecution
-    def 'kotlin #kotlinVersion and groovy plugins combined'() {
+    @UnsupportedWithInstantExecution(iterationMatchers = NO_INSTANT_EXECUTION_ITERATION_MATCHER)
+    def 'kotlin jvm and groovy plugins combined (kotlin=#kotlinVersion)'() {
         given:
         buildFile << """
             buildscript {
@@ -157,8 +168,8 @@ class KotlinPluginSmokeTest extends AbstractSmokeTest {
             }
         """
         file("src/main/groovy/Groovy.groovy") << "class Groovy { }"
-        file("src/main/kotlin/Kotlin.kt")     << "class Kotlin { val groovy = Groovy() }"
-        file("src/main/java/Java.java")       << "class Java { private Kotlin kotlin = new Kotlin(); }" // dependency to compileJava->compileKotlin is added by Kotlin plugin
+        file("src/main/kotlin/Kotlin.kt") << "class Kotlin { val groovy = Groovy() }"
+        file("src/main/java/Java.java") << "class Java { private Kotlin kotlin = new Kotlin(); }" // dependency to compileJava->compileKotlin is added by Kotlin plugin
 
         when:
         def result = build(false, 'compileJava')

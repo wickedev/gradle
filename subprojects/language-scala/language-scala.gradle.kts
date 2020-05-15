@@ -1,7 +1,5 @@
-import org.gradle.gradlebuild.unittestandcompile.ModuleType
-
 plugins {
-    `java-library`
+    gradlebuild.distribution.`plugins-api-java`
 }
 
 dependencies {
@@ -48,8 +46,13 @@ dependencies {
     compileOnly("org.scala-sbt:zinc_2.12:1.3.5")
 }
 
+strictCompile {
+    ignoreDeprecations() // uses deprecated software model types
+}
 
-gradlebuildJava {
-    moduleType = ModuleType.CORE
+classycle {
+    excludePatterns.set(listOf(
+        "org/gradle/api/internal/tasks/scala/**",
+        "org/gradle/language/scala/internal/toolchain/**"))
 }
 

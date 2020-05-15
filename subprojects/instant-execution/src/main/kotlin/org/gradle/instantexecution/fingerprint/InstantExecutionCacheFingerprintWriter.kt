@@ -16,6 +16,7 @@
 
 package org.gradle.instantexecution.fingerprint
 
+import com.google.common.collect.Sets.newConcurrentHashSet
 import org.gradle.api.execution.internal.TaskInputsListener
 import org.gradle.api.internal.TaskInternal
 import org.gradle.api.internal.file.FileCollectionInternal
@@ -24,6 +25,7 @@ import org.gradle.api.internal.provider.sources.FileContentValueSource
 import org.gradle.api.provider.ValueSourceParameters
 import org.gradle.groovy.scripts.ScriptSource
 import org.gradle.initialization.DefaultSettingsLoader.BUILD_SRC_PROJECT_PATH
+import org.gradle.instantexecution.UndeclaredBuildInputListener
 import org.gradle.instantexecution.extensions.uncheckedCast
 import org.gradle.instantexecution.fingerprint.InstantExecutionCacheFingerprint.InputFile
 import org.gradle.instantexecution.fingerprint.InstantExecutionCacheFingerprint.ValueSource
@@ -38,9 +40,11 @@ internal
 class InstantExecutionCacheFingerprintWriter(
     private val host: Host,
     private val writeContext: DefaultWriteContext
-) : ValueSourceProviderFactory.Listener, TaskInputsListener, ScriptExecutionListener {
+) : ValueSourceProviderFactory.Listener, TaskInputsListener, ScriptExecutionListener, UndeclaredBuildInputListener {
 
     interface Host {
+
+        val allInitScripts: List<File>
 
         fun hashCodeOf(file: File): HashCode?
 
@@ -48,6 +52,19 @@ class InstantExecutionCacheFingerprintWriter(
             fileCollection: FileCollectionInternal,
             owner: TaskInternal
         ): HashCode
+    }
+
+    private
+    val capturedFiles: MutableSet<File>
+
+    init {
+        val initScripts = host.allInitScripts
+        capturedFiles = newConcurrentHashSet(initScripts)
+        write(
+            InstantExecutionCacheFingerprint.InitScripts(
+                initScripts.map(::inputFile)
+            )
+        )
     }
 
     /**
@@ -58,6 +75,10 @@ class InstantExecutionCacheFingerprintWriter(
     fun close() {
         write(null)
         writeContext.close()
+    }
+
+    override fun systemPropertyRead(key: String) {
+        write(InstantExecutionCacheFingerprint.UndeclaredSystemProperty(key))
     }
 
     override fun <T : Any, P : ValueSourceParameters> valueObtained(
@@ -94,13 +115,17 @@ class InstantExecutionCacheFingerprintWriter(
 
     private
     fun captureFile(file: File) {
-        write(
-            InputFile(
-                file,
-                host.hashCodeOf(file)
-            )
-        )
+        if (!capturedFiles.add(file))
+            return
+        write(inputFile(file))
     }
+
+    private
+    fun inputFile(file: File) =
+        InputFile(
+            file,
+            host.hashCodeOf(file)
+        )
 
     private
     fun captureTaskInputs(task: TaskInternal, fileSystemInputs: FileCollectionInternal) {

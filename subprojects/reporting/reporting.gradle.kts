@@ -1,7 +1,5 @@
-import org.gradle.gradlebuild.unittestandcompile.ModuleType
-
 plugins {
-    `java-library`
+    gradlebuild.distribution.`plugins-api-java`
 }
 
 configurations {
@@ -42,8 +40,13 @@ dependencies {
     add("reports", "jquery:jquery.min:3.4.1@js")
 }
 
-gradlebuildJava {
-    moduleType = ModuleType.CORE
+strictCompile {
+    ignoreRawTypes() // raw types used in public API
+    ignoreParameterizedVarargType() // [unchecked] Possible heap pollution from parameterized vararg type: GenerateBuildDashboard.aggregate()
+}
+
+classycle {
+    excludePatterns.set(listOf("org/gradle/api/reporting/internal/**"))
 }
 
 val generatedResourcesDir = gradlebuildJava.generatedResourcesDir

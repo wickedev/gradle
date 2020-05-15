@@ -44,6 +44,7 @@ abstract class AbstractSmokeTest extends Specification {
     protected static final AndroidGradlePluginVersions AGP_VERSIONS = new AndroidGradlePluginVersions()
     protected static final String AGP_3_ITERATION_MATCHER = ".*agp=3\\..*"
     protected static final String AGP_4_0_ITERATION_MATCHER = ".*agp=4\\.0\\..*"
+    protected static final String AGP_4_1_ITERATION_MATCHER = ".*agp=4\\.1\\..*"
 
     static class TestedVersions {
         /**
@@ -93,7 +94,7 @@ abstract class AbstractSmokeTest extends Specification {
         static androidGradle = Versions.of(*AGP_VERSIONS.latestsPlusNightly)
 
         // https://search.maven.org/search?q=g:org.jetbrains.kotlin%20AND%20a:kotlin-project&core=gav
-        static kotlin = Versions.of('1.3.21', '1.3.31', '1.3.41', '1.3.50', '1.3.61', '1.3.71')
+        static kotlin = Versions.of('1.3.21', '1.3.31', '1.3.41', '1.3.50', '1.3.61', '1.3.72')
 
         // https://plugins.gradle.org/plugin/org.gretty
         static gretty = "3.0.2"
@@ -121,7 +122,7 @@ abstract class AbstractSmokeTest extends Specification {
         static protobufTools = "3.11.1"
 
         // https://plugins.gradle.org/plugin/org.gradle.test-retry
-        static testRetryPlugin = "1.1.3"
+        static testRetryPlugin = "1.1.5"
 
         // https://plugins.gradle.org/plugin/com.jfrog.artifactory
         static artifactoryPlugin = "4.15.1"
@@ -198,6 +199,13 @@ abstract class AbstractSmokeTest extends Specification {
         if (GradleContextualExecuter.isInstant()) {
             parameters += InstantExecutionGradleExecuter.INSTANT_EXECUTION_ARGS
             parameters += ["-D${BuildOperationTrace.SYSPROP}=${buildOperationTracePath()}".toString()]
+            def maxProblems = maxInstantExecutionProblems()
+            if (maxProblems > 0) {
+                parameters += [
+                    '-Dorg.gradle.unsafe.instant-execution.fail-on-problems=false',
+                    "-Dorg.gradle.unsafe.instant-execution.max-problems=$maxProblems".toString()
+                ]
+            }
         }
         def generatedApiJarCacheDir = IntegrationTestBuildContext.INSTANCE.gradleGeneratedApiJarCacheDir
         if (generatedApiJarCacheDir == null) {
@@ -221,6 +229,10 @@ abstract class AbstractSmokeTest extends Specification {
             "-D${PLUGIN_PORTAL_OVERRIDE_URL_PROPERTY}=${gradlePluginRepositoryMirrorUrl()}" as String,
             "-D${INIT_SCRIPT_LOCATION}=${mirrorInitScriptPath}" as String,
         ]
+    }
+
+    protected int maxInstantExecutionProblems() {
+        return 0
     }
 
     protected void assertInstantExecutionStateStored() {

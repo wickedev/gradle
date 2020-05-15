@@ -22,6 +22,8 @@ import org.gradle.integtests.fixtures.KotlinDslTestUtil
 import org.gradle.test.fixtures.file.TestFile
 import spock.lang.Unroll
 
+import static org.junit.Assume.assumeFalse
+
 class InstantExecutionBuildSrcChangesIntegrationTest extends AbstractInstantExecutionIntegrationTest {
 
     private static final String TASK_NAME = "greet"
@@ -46,7 +48,7 @@ class InstantExecutionBuildSrcChangesIntegrationTest extends AbstractInstantExec
 
         when:
         fixture.applyChange()
-        if (isKotlinBuildSrc && isSourceChange) {
+        if (isKotlinBuildSrc) {
             problems.withDoNotFailOnProblems()
         }
         instantRun()
@@ -68,7 +70,85 @@ class InstantExecutionBuildSrcChangesIntegrationTest extends AbstractInstantExec
         change = change_ as BuildSrcChange
 
         isKotlinBuildSrc = language == BuildSrcLanguage.KOTLIN
-        isSourceChange = change in [BuildSrcChange.ADD_SOURCE, BuildSrcChange.CHANGE_SOURCE]
+    }
+
+    @Unroll
+    def "invalidates cache upon change to #inputName used by buildSrc"() {
+
+        assumeFalse(
+            'property from gradle.properties is not available to buildSrc',
+            inputName == 'gradle.properties'
+        )
+
+        given:
+        def instant = newInstantExecutionFixture()
+        file("buildSrc/build.gradle.kts").text = """
+
+            import org.gradle.api.provider.*
+
+            interface Params: ValueSourceParameters {
+                val value: Property<String>
+            }
+
+            abstract class IsCi : ValueSource<String, Params> {
+                override fun obtain(): String? = parameters.value.orNull
+            }
+            val ciProvider = providers.of(IsCi::class.java) {
+                parameters.value.set(providers.systemProperty("test_is_ci").forUseAtConfigurationTime())
+            }
+
+            val isCi = ${inputExpression}.forUseAtConfigurationTime()
+            tasks {
+                if (isCi.isPresent) {
+                    register("run") {
+                        doLast { println("ON CI") }
+                    }
+                } else {
+                    register("run") {
+                        doLast { println("NOT CI") }
+                    }
+                }
+                assemble {
+                    dependsOn("run")
+                }
+            }
+        """
+        buildFile << """
+            task assemble
+        """
+
+        when:
+        instantRun "assemble"
+
+        then:
+        output.count("NOT CI") == 1
+        instant.assertStateStored()
+
+        when:
+        instantRun "assemble"
+
+        then: "buildSrc doesn't build"
+        output.count("CI") == 0
+        instant.assertStateLoaded()
+
+        when:
+        if (inputName == 'gradle.properties') {
+            file('gradle.properties').text = 'test_is_ci=true'
+            instantRun "assemble"
+        } else {
+            instantRun "assemble", inputArgument
+        }
+
+        then:
+        output.count("ON CI") == 1
+        instant.assertStateStored()
+
+        where:
+        inputName             | inputExpression                          | inputArgument
+        'custom value source' | 'ciProvider'                             | '-Dtest_is_ci=true'
+        'system property'     | 'providers.systemProperty("test_is_ci")' | '-Dtest_is_ci=true'
+        'Gradle property'     | 'providers.gradleProperty("test_is_ci")' | '-Ptest_is_ci=true'
+        'gradle.properties'   | 'providers.gradleProperty("test_is_ci")' | ''
     }
 
     private instantRun() {

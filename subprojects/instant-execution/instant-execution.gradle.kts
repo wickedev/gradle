@@ -1,13 +1,11 @@
 import build.futureKotlin
-import org.gradle.gradlebuild.unittestandcompile.ModuleType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    `kotlin-library`
+    gradlebuild.distribution.`plugins-implementation-kotlin`
 }
 
 tasks {
-
     withType<KotlinCompile>().configureEach {
         kotlinOptions {
             freeCompilerArgs += listOf(
@@ -74,6 +72,8 @@ dependencies {
     integTestImplementation(project(":jvmServices"))
     integTestImplementation(project(":toolingApi"))
     integTestImplementation(project(":platformJvm"))
+    integTestImplementation(project(":testKit"))
+    integTestImplementation(project(":launcher"))
 
     integTestImplementation(library("guava"))
     integTestImplementation(library("ant"))
@@ -89,6 +89,6 @@ dependencies {
     integTestRuntimeOnly(project(":kotlinDslProviderPlugins"))
 }
 
-gradlebuildJava {
-    moduleType = ModuleType.CORE
+classycle {
+    excludePatterns.set(listOf("org/gradle/instantexecution/**"))
 }

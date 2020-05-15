@@ -17,6 +17,7 @@
 package org.gradle.integtests.fixtures
 
 import org.gradle.api.internal.plugins.DefaultPluginManager
+import org.gradle.integtests.fixtures.executer.GradleContextualExecuter
 import org.gradle.util.GUtil
 import org.junit.Assume
 
@@ -54,7 +55,6 @@ abstract class WellBehavedPluginTest extends AbstractPluginIntegrationTest {
         "PmdPluginIntegrationTest",
         "CppLibraryPluginIntegrationTest",
         "CppApplicationPluginIntegrationTest",
-        "SwiftApplicationPluginIntegrationTest",
         "XcodePluginIntegrationTest",
         "IdeaPluginGoodBehaviourTest"
     ])
@@ -92,7 +92,6 @@ abstract class WellBehavedPluginTest extends AbstractPluginIntegrationTest {
         "PmdPluginIntegrationTest",
         "CppLibraryPluginIntegrationTest",
         "CppApplicationPluginIntegrationTest",
-        "SwiftApplicationPluginIntegrationTest",
         "XcodePluginIntegrationTest",
         "IdeaPluginGoodBehaviourTest"
     ])
@@ -128,18 +127,28 @@ abstract class WellBehavedPluginTest extends AbstractPluginIntegrationTest {
         applyPlugin()
 
         buildFile << """
-            def configuredTasks = []
             tasks.configureEach {
-                configuredTasks << it
-            }
-
-            gradle.buildFinished {
-                def configuredTaskPaths = configuredTasks*.path
-
-                assert configuredTaskPaths == [':help']
+                println("configuring \${it.path}")
             }
         """
-        expect:
+
+        when:
         succeeds("help")
+
+        then:
+        def appliesBasePlugin = !(pluginName in [
+            'build-dashboard', 'build-init', 'help-tasks', 'wrapper',
+            'ivy-publish', 'maven-publish', 'publishing',
+            'eclipse', 'idea',
+        ])
+        if (GradleContextualExecuter.isInstant() && appliesBasePlugin) {
+            assert output.count("configuring :") == 2
+            outputContains("configuring :help")
+            // because capturing registered outputs for stale output cleanup forces configuring clean
+            outputContains("configuring :clean")
+        } else {
+            assert output.count("configuring :") == 1
+            outputContains("configuring :help")
+        }
     }
 }

@@ -128,9 +128,9 @@ class
 BuildServiceProviderCodec(private val serviceRegistry: BuildServiceRegistryInternal) : Codec<BuildServiceProvider<*, *>> {
     override suspend fun WriteContext.encode(value: BuildServiceProvider<*, *>) {
         encodePreservingSharedIdentityOf(value) {
-            writeString(value.getName())
-            writeClass(value.getImplementationType())
-            write(value.getParameters())
+            writeString(value.name)
+            writeClass(value.implementationType)
+            write(value.parameters)
             writeInt(serviceRegistry.forService(value).maxUsages)
         }
     }
@@ -181,7 +181,7 @@ ValueSourceProviderCodec(
         encodePreservingSharedIdentityOf(value) {
             value.run {
                 writeClass(valueSourceType)
-                writeClass(parametersType)
+                writeClass(parametersType as Class<*>)
                 write(parameters)
             }
         }
@@ -207,7 +207,7 @@ ValueSourceProviderCodec(
 class
 PropertyCodec(private val propertyFactory: PropertyFactory, private val providerCodec: FixedValueReplacingProviderCodec) : Codec<DefaultProperty<*>> {
     override suspend fun WriteContext.encode(value: DefaultProperty<*>) {
-        writeClass(value.type!!)
+        writeClass(value.type as Class<*>)
         providerCodec.run { encodeProvider(value.provider) }
     }
 
