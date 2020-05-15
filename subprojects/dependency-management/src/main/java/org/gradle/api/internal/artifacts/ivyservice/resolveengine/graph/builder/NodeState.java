@@ -658,7 +658,7 @@ public class NodeState implements DependencyGraphNode {
                     ExcludeSpec exclusions = dependencyEdge.getExclusions();
                     if (edgeExclusions == null || exclusions == nothing) {
                         edgeExclusions = exclusions;
-                    } else if (edgeExclusions != exclusions) {
+                    } else if (exclusions != null && edgeExclusions != exclusions) {
                         if (excludedByBoth == null) {
                             excludedByBoth = Sets.newHashSetWithExpectedSize(incomingEdgeCount);
                         }
